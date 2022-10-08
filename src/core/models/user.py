@@ -1,6 +1,7 @@
-from pony.orm import PrimaryKey, Required, Set
+from pony.orm import PrimaryKey, Required
 
-from src.core.models.database import db
+from core.models.database import db
+
 
 class User(db.Entity):
     name = PrimaryKey(str, 32)
@@ -8,4 +9,3 @@ class User(db.Entity):
     password = Required(str)
     has_avatar = Required(bool, default=False)
     is_verified = Required(bool, default=False)
-
