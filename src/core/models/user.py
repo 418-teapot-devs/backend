@@ -1,4 +1,4 @@
-from pony.orm import PrimaryKey, Required
+from pony.orm import PrimaryKey, Required, Set
 
 from core.models.database import db
 
@@ -9,3 +9,4 @@ class User(db.Entity):
     password = Required(str)
     has_avatar = Required(bool, default=False)
     is_verified = Required(bool, default=False)
+    robots = Set("Robot")
