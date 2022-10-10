@@ -1,20 +1,14 @@
 from fastapi import FastAPI
 
-from views.teapot import router as TeapotRouter
+from views.users import router as UserRouter
 
 app = FastAPI(
     title="PyRobots API",
 )
 
+app.include_router(UserRouter, prefix="/users")
+
 
 @app.get("/")
-async def read_root():
-    return {"msg": "Hola tetera"}
-
-
-@app.get("/{id}")
-async def read_root(id):
-    return {"msg": f"Hola {id}"}
-
-
-app.include_router(TeapotRouter, prefix="/teapot")
+async def root():
+    return {"msg": "Welcome to PyRobots!"}
