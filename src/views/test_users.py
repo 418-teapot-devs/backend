@@ -1,15 +1,9 @@
 from fastapi import responses
 from fastapi.testclient import TestClient
 
-from .main import app
+from ..main import app
 
 cl = TestClient(app)
-
-
-def test_root():
-    response = cl.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"msg": "Welcome to PyRobots!"}
 
 
 def test_users_invalid_register():
