@@ -10,5 +10,5 @@ app.include_router(UserRouter, prefix="/users")
 
 
 @app.get("/")
-async def root():
+def root():
     return {"msg": "Welcome to PyRobots!"}
