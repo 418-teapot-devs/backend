@@ -31,9 +31,18 @@ def test_users_register_restrictions():
         json={"username": "test", "password": "test", "e_mail": "test@test.com"},
     )
     test_jsons = [
-        ({"username": "test", "password": "1234", "e_mail": "otro@distinto.com"}, "Username was taken!"),
-        ({"username": "otrodistinto", "password": "1234", "e_mail": "test@test.com"}, "E-Mail was taken!"),
-        ({"username": "test", "password": "1234", "e_mail": "test@test.com"}, "Username was taken!"),
+        (
+            {"username": "test", "password": "1234", "e_mail": "otro@distinto.com"},
+            "Username was taken!",
+        ),
+        (
+            {"username": "otrodistinto", "password": "1234", "e_mail": "test@test.com"},
+            "E-Mail was taken!",
+        ),
+        (
+            {"username": "test", "password": "1234", "e_mail": "test@test.com"},
+            "Username was taken!",
+        ),
     ]
     for params, expected_msg in test_jsons:
         response = cl.post("/users/", json=params)
