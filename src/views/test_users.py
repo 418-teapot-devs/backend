@@ -1,4 +1,3 @@
-from fastapi import responses
 from fastapi.testclient import TestClient
 
 from ..main import app
@@ -11,7 +10,8 @@ def test_users_invalid_register():
         {"username": "test", "password": "test"},
         {"username": "test", "e_mail": "test@test.com"},
         {"username": "test", "password": "test", "e_mail": "test"},
-        {"username": "test", "password": "test"},
+        {"username": "test", "password": "test", "e_mail": "a@b.c"},
+        {"username": "test", "password": "Test1234", "e_mail": "a@bc"},
     ]
     for params in test_jsons:
         response = cl.post("/users/", json=params)
