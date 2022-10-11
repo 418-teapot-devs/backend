@@ -12,3 +12,4 @@ class User(db.Entity):
     has_avatar = Required(bool, default=False)
     is_verified = Required(bool, default=False)
     robots = Set("Robot")
+    matches_hosts = Set("Match",reverse="hosts")
