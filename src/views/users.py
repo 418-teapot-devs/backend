@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.post("/")
-async def register(schema: Register):
+def register(schema: Register):
     with db_session:
         if User.exists(name=schema.username):
             raise HTTPException(status_code=422, detail="Username was taken!")
