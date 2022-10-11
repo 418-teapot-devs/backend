@@ -21,26 +21,34 @@ def test_users_invalid_register():
 def test_users_register_restrictions():
     response = cl.post(
         "/users/",
-        json={"username": "test", "password": "test", "e_mail": "test@test.com"},
+        json={
+            "username": "test",
+            "password": "418IAmATeapot",
+            "e_mail": "test@test.com",
+        },
     )
     assert response.status_code == 200
     assert response.json() == {}
 
-    response = cl.post(
-        "/users/",
-        json={"username": "test", "password": "test", "e_mail": "test@test.com"},
-    )
     test_jsons = [
         (
-            {"username": "test", "password": "1234", "e_mail": "otro@distinto.com"},
+            {
+                "username": "test",
+                "password": "pAssWord1",
+                "e_mail": "otro@distinto.com",
+            },
             "Username was taken!",
         ),
         (
-            {"username": "otrodistinto", "password": "1234", "e_mail": "test@test.com"},
+            {
+                "username": "otrodistinto",
+                "password": "salt27AAA!",
+                "e_mail": "test@test.com",
+            },
             "E-Mail was taken!",
         ),
         (
-            {"username": "test", "password": "1234", "e_mail": "test@test.com"},
+            {"username": "test", "password": "Aa12345678", "e_mail": "test@test.com"},
             "Username was taken!",
         ),
     ]
