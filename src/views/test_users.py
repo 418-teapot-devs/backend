@@ -6,6 +6,8 @@ from ..views import JWT_ALGORITHM, JWT_SECRET_KEY
 
 cl = TestClient(app)
 
+def json_to_queryparams(json: dict):
+    return "?" + "&".join([f"{k}={v}" for k, v in json.items()])
 
 def test_users_invalid_register():
     test_jsons = [
@@ -16,19 +18,17 @@ def test_users_invalid_register():
         {"username": "test", "password": "Test1234", "e_mail": "a@bc"},
     ]
     for params in test_jsons:
-        response = cl.post("/users/", json=params)
+        response = cl.post(f"/users/{json_to_queryparams(params)}")
         assert response.status_code == 422
 
 
 def test_users_register_restrictions():
-    response = cl.post(
-        "/users/",
-        json={
+    params = json_to_queryparams({
             "username": "test",
             "password": "418IAmATeapot",
-            "e_mail": "test@test.com",
-        },
-    )
+            "e_mail": "test@test.com"
+        })
+    response = cl.post(f"/users/{params}")
     assert response.status_code == 200
 
     data = response.json()
@@ -63,9 +63,10 @@ def test_users_register_restrictions():
             "username was taken!",
         ),
     ]
-    for params, status_code, expected_msg in test_jsons:
-        response = cl.post("/users/", json=params)
-        assert response.status_code == status_code
+
+    for params, expected_msg in test_jsons:
+        response = cl.post(f"/users/{json_to_queryparams(params)}")
+        assert response.status_code == 422
         assert response.json() == {"detail": expected_msg}
 
 
@@ -109,4 +110,3 @@ def test_login():
     for params, status_code, expected_msg in test_jsons:
         response = cl.post("/users/login", json=params)
         assert response.status_code == status_code
-        assert response.json() == {"detail": expected_msg}
