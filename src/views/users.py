@@ -33,11 +33,16 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         raise HTTPException(status_code=422, detail="invalid picture format")
 
     with db_session:
+
+        err = []
         if User.exists(name=schema.username):
-            raise HTTPException(status_code=422, detail="username was taken!")
+            err.append("Username was taken!")
 
         if User.exists(e_mail=schema.e_mail):
-            raise HTTPException(status_code=422, detail="email was taken!")
+            err.append("E-Mail was taken!")
+
+        if len(err) > 0:
+            raise HTTPException(status_code=409, detail=err)
 
         # store avatar to disk
         if avatar:
