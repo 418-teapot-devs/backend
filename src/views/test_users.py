@@ -45,7 +45,8 @@ def test_users_register_restrictions():
                 "password": "pAssWord1",
                 "e_mail": "otro@distinto.com",
             },
-            422, "username was taken!",
+            422,
+            "username was taken!",
         ),
         (
             {
@@ -53,11 +54,13 @@ def test_users_register_restrictions():
                 "password": "salt27AAA!",
                 "e_mail": "test@test.com",
             },
-            422, "email was taken!",
+            422,
+            "email was taken!",
         ),
         (
             {"username": "test", "password": "Aa12345678", "e_mail": "test@test.com"},
-            422, "username was taken!",
+            422,
+            "username was taken!",
         ),
     ]
     for params, status_code, expected_msg in test_jsons:
@@ -93,11 +96,13 @@ def test_login():
     test_jsons = [
         (
             {"username": "leo11", "password": "Burrito21"},
-            401, "username not found!",
+            401,
+            "username not found!",
         ),
         (
             {"username": "leo10", "password": "burrito21"},
-            401, "passwords don't match!",
+            401,
+            "passwords don't match!",
         ),
     ]
 
