@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from jose import jwt
 from passlib.context import CryptContext
 from pony.orm import commit, db_session
@@ -28,21 +28,31 @@ def create_access_token(data: dict, expires_delta: timedelta):
 
 
 @router.post("/", response_model=Token)
-async def register(schema: Register):
+def register(schema: Register = Depends(), avatar: UploadFile | None = None):
+    if avatar and avatar.content_type != "image/png":
+        raise HTTPException(status_code=422, detail="invalid picture format")
+
     with db_session:
+        err = []
         if User.exists(name=schema.username):
-            raise HTTPException(status_code=422, detail="username was taken!")
+            err.append("Username was taken!")
 
         if User.exists(e_mail=schema.e_mail):
-            raise HTTPException(status_code=422, detail="email was taken!")
+            err.append("E-Mail was taken!")
+
+        if len(err) > 0:
+            raise HTTPException(status_code=409, detail=err)
 
         # store avatar to disk
+        if avatar:
+            with open(f"assets/users/{schema.username}.png", "wb") as f:
+                f.write(avatar.file.read())
 
         user = User(
             name=schema.username,
             password=password_context.hash(schema.password),
             e_mail=schema.e_mail,
-            has_avatar=schema.avatar is not None,
+            has_avatar=avatar is not None,
         )
         commit()
 

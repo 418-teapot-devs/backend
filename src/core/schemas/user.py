@@ -1,5 +1,6 @@
+from fastapi import HTTPException
 from password_validator import PasswordValidator
-from pydantic import BaseModel, EmailStr, HttpUrl, validator
+from pydantic import BaseModel, EmailStr, validator
 
 pass_validator = (
     PasswordValidator()
@@ -18,12 +19,11 @@ class Register(BaseModel):
     username: str
     password: str
     e_mail: EmailStr
-    avatar: HttpUrl | None
 
     @validator("password")
     def password_is_correct(cls, v):
         if not pass_validator.validate(v):
-            raise ValueError("value is not a valid password")
+            raise HTTPException(status_code=422, detail="value is not a valid password")
 
         return v
 

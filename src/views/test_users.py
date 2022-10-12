@@ -1,3 +1,5 @@
+from urllib.parse import quote_plus
+
 from fastapi.testclient import TestClient
 from jose import jwt
 
@@ -5,6 +7,10 @@ from ..main import app
 from ..views import JWT_ALGORITHM, JWT_SECRET_KEY
 
 cl = TestClient(app)
+
+
+def json_to_queryparams(json: dict):
+    return "?" + "&".join([f"{k}={quote_plus(v)}" for k, v in json.items()])
 
 
 def test_users_invalid_register():
@@ -16,19 +22,15 @@ def test_users_invalid_register():
         {"username": "test", "password": "Test1234", "e_mail": "a@bc"},
     ]
     for params in test_jsons:
-        response = cl.post("/users/", json=params)
+        response = cl.post(f"/users/{json_to_queryparams(params)}")
         assert response.status_code == 422
 
 
 def test_users_register_restrictions():
-    response = cl.post(
-        "/users/",
-        json={
-            "username": "test",
-            "password": "418IAmATeapot",
-            "e_mail": "test@test.com",
-        },
+    params = json_to_queryparams(
+        {"username": "test", "password": "418IAmATeapot", "e_mail": "test@test.com"}
     )
+    response = cl.post(f"/users/{params}")
     assert response.status_code == 200
 
     data = response.json()
@@ -45,8 +47,8 @@ def test_users_register_restrictions():
                 "password": "pAssWord1",
                 "e_mail": "otro@distinto.com",
             },
-            422,
-            "username was taken!",
+            409,
+            ["Username was taken!"],
         ),
         (
             {
@@ -54,30 +56,29 @@ def test_users_register_restrictions():
                 "password": "salt27AAA!",
                 "e_mail": "test@test.com",
             },
-            422,
-            "email was taken!",
+            409,
+            ["E-Mail was taken!"],
         ),
         (
             {"username": "test", "password": "Aa12345678", "e_mail": "test@test.com"},
-            422,
-            "username was taken!",
+            409,
+            ["Username was taken!", "E-Mail was taken!"],
         ),
     ]
-    for params, status_code, expected_msg in test_jsons:
-        response = cl.post("/users/", json=params)
+    for params, status_code, expected_detail in test_jsons:
+        response = cl.post(f"/users/{json_to_queryparams(params)}")
         assert response.status_code == status_code
-        assert response.json() == {"detail": expected_msg}
+        assert response.json() == {"detail": expected_detail}
 
 
 def test_login():
-    response = cl.post(
-        "/users/",
-        json={
-            "username": "leo10",
-            "password": "Burrito21",
-            "e_mail": "leo10@hotmail.com.ar",
-        },
-    )
+    register_form = {
+        "username": "leo10",
+        "password": "Burrito21",
+        "e_mail": "leo10@hotmail.com.ar",
+    }
+
+    response = cl.post(f"/users/{json_to_queryparams(register_form)}")
     assert response.status_code == 200
 
     response = cl.post(
@@ -109,4 +110,23 @@ def test_login():
     for params, status_code, expected_msg in test_jsons:
         response = cl.post("/users/login", json=params)
         assert response.status_code == status_code
-        assert response.json() == {"detail": expected_msg}
+
+
+def test_users_avatar():
+    json = {
+        "username": "conavatar",
+        "password": "Secr3tIs1m0#",
+        "e_mail": "img@test.com",
+    }
+    response = cl.post(
+        f"/users/{json_to_queryparams(json)}",
+        files=[("imagen", open("../assets/users/test.png", "rb"))],
+    )
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "token" in data.keys()
+
+    payload = jwt.decode(data["token"], JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    assert payload["sub"] == "login"
+    assert payload["username"] == "conavatar"
