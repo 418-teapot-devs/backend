@@ -26,3 +26,12 @@ class Register(BaseModel):
             raise ValueError("value is not a valid password")
 
         return v
+
+
+class Login(BaseModel):
+    username: str
+    password: str
+
+
+class Token(BaseModel):
+    token: str
