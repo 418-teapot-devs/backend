@@ -12,4 +12,5 @@ class Robot(db.Entity):
     played_matches = Required(int, default=0)
     won_matches = Required(int, default=0)
     lost_matches = Required(int, default=0)
+    matches_in = Set("Match", reverse="plays")
     PrimaryKey(owner, name)
