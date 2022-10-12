@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
+from jose import jwt
 
 from ..main import app
+from ..views import JWT_ALGORITHM, JWT_SECRET_KEY
 
 cl = TestClient(app)
 
@@ -28,7 +30,13 @@ def test_users_register_restrictions():
         },
     )
     assert response.status_code == 200
-    assert response.json() == {}
+
+    data = response.json()
+    assert "token" in data.keys()
+
+    payload = jwt.decode(data["token"], JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    assert payload["sub"] == "login"
+    assert payload["username"] == "test"
 
     test_jsons = [
         (
@@ -37,7 +45,7 @@ def test_users_register_restrictions():
                 "password": "pAssWord1",
                 "e_mail": "otro@distinto.com",
             },
-            "Username was taken!",
+            "username was taken!",
         ),
         (
             {
@@ -45,11 +53,11 @@ def test_users_register_restrictions():
                 "password": "salt27AAA!",
                 "e_mail": "test@test.com",
             },
-            "E-Mail was taken!",
+            "email was taken!",
         ),
         (
             {"username": "test", "password": "Aa12345678", "e_mail": "test@test.com"},
-            "Username was taken!",
+            "username was taken!",
         ),
     ]
     for params, expected_msg in test_jsons:
