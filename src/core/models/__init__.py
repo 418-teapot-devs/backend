@@ -1,5 +1,5 @@
 from .database import *
-from .matches import *
+from .match import *
 from .robot import *
 from .user import *
 
