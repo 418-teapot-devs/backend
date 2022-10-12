@@ -18,7 +18,6 @@ class Register(BaseModel):
     username: str
     password: str
     e_mail: EmailStr
-    avatar: HttpUrl | None
 
     @validator("password")
     def password_is_correct(cls, v):
