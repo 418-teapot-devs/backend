@@ -49,7 +49,7 @@ def test_users_register_restrictions():
                 "e_mail": "otro@distinto.com",
             },
             422,
-            "username was taken!",
+            ["Username was taken!"],
         ),
         (
             {
@@ -58,19 +58,18 @@ def test_users_register_restrictions():
                 "e_mail": "test@test.com",
             },
             422,
-            "email was taken!",
+            ["E-Mail was taken!"],
         ),
         (
             {"username": "test", "password": "Aa12345678", "e_mail": "test@test.com"},
             422,
-            "username was taken!",
+            ["Username was taken!", "E-Mail was taken!"],
         ),
     ]
-
-    for params, expected_msg in test_jsons:
+    for params, expected_detail in test_jsons:
         response = cl.post(f"/users/{json_to_queryparams(params)}")
-        assert response.status_code == 422
-        assert response.json() == {"detail": expected_msg}
+        assert response.status_code == 409
+        assert response.json() == {"detail": expected_detail}
 
 
 def test_login():
