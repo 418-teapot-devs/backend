@@ -45,7 +45,7 @@ def test_users_register_restrictions():
                 "password": "pAssWord1",
                 "e_mail": "otro@distinto.com",
             },
-            "username was taken!",
+            422, "username was taken!",
         ),
         (
             {
@@ -53,14 +53,55 @@ def test_users_register_restrictions():
                 "password": "salt27AAA!",
                 "e_mail": "test@test.com",
             },
-            "email was taken!",
+            422, "email was taken!",
         ),
         (
             {"username": "test", "password": "Aa12345678", "e_mail": "test@test.com"},
-            "username was taken!",
+            422, "username was taken!",
         ),
     ]
-    for params, expected_msg in test_jsons:
+    for params, status_code, expected_msg in test_jsons:
         response = cl.post("/users/", json=params)
-        assert response.status_code == 422
+        assert response.status_code == status_code
+        assert response.json() == {"detail": expected_msg}
+
+
+def test_login():
+    response = cl.post(
+        "/users/",
+        json={
+            "username": "leo10",
+            "password": "Burrito21",
+            "e_mail": "leo10@hotmail.com.ar",
+        },
+    )
+    assert response.status_code == 200
+
+    response = cl.post(
+        "/users/login",
+        json={"username": "leo10", "password": "Burrito21"},
+    )
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "token" in data.keys()
+
+    payload = jwt.decode(data["token"], JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    assert payload["sub"] == "login"
+    assert payload["username"] == "leo10"
+
+    test_jsons = [
+        (
+            {"username": "leo11", "password": "Burrito21"},
+            401, "username not found!",
+        ),
+        (
+            {"username": "leo10", "password": "burrito21"},
+            401, "passwords don't match!",
+        ),
+    ]
+
+    for params, status_code, expected_msg in test_jsons:
+        response = cl.post("/users/login", json=params)
+        assert response.status_code == status_code
         assert response.json() == {"detail": expected_msg}
