@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from jose import jwt
+from urllib.parse import quote_plus
 
 from ..main import app
 from ..views import JWT_ALGORITHM, JWT_SECRET_KEY
@@ -7,7 +8,7 @@ from ..views import JWT_ALGORITHM, JWT_SECRET_KEY
 cl = TestClient(app)
 
 def json_to_queryparams(json: dict):
-    return "?" + "&".join([f"{k}={v}" for k, v in json.items()])
+    return "?" + "&".join([f"{k}={quote_plus(v)}" for k, v in json.items()])
 
 def test_users_invalid_register():
     test_jsons = [
@@ -110,3 +111,16 @@ def test_login():
     for params, status_code, expected_msg in test_jsons:
         response = cl.post("/users/login", json=params)
         assert response.status_code == status_code
+
+
+def test_users_avatar():
+    json = { "username": "conavatar", "password": "Secr3tIs1m0#", "e_mail": "img@test.com"}
+    response = cl.post(f"/users/{json_to_queryparams(json)}", files=[ ("imagen", open("../assets/users/test.png", "rb")) ])
+    assert response.status_code == 200
+    assert response.json() == {}
+
+    json = { "username": "malavatar", "password": "Secr3tIs1m0#", "e_mail": "img@text.com"}
+    response = cl.post(f"/users/{json_to_queryparams(json)}", files=[ ("binario", open("./core/models/db.sqlite", "rb")) ], headers={"Content-Type": "application/octet-stream"})
+    # assert response.status_code == 422
+    assert response.json() == {"detail": "Invalid picture format"}
+
