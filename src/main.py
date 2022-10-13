@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from views.users import router as UserRouter
+from views.created import router as CreatedRouter
 
 app = FastAPI(
     title="PyRobots API",
@@ -21,7 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(UserRouter, prefix="/users")
-
+app.include_router(CreatedRouter,prefix="/matchs")
 
 @app.get("/")
 def root():
