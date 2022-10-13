@@ -3,18 +3,20 @@
 ## File structure
 ```
 .
-├── src
-│  ├── core
-│  │   ├── models		# database entities
-│  │   ├── schemas		# endpoint schemes
-│  │   └── settings.py		# database configuration
-│  ├── main.py			# main entry point
-│  └── views			# endpoint routers
-└── assets
-   ├── robots			# robot avatar images and code
-   │  ├── avatar		# {username}_{robot name}.png
-   │  └── code			# {username}_{robot name}.py
-   └── users			# user avatars ({username}.png)
+└── app
+    ├── assets
+    │   ├── robots
+    │   │   ├── avatar      # {robot_id}.{png|jpg|jpeg}
+    │   │   └── code        # {robot_id}.py
+    │   └── users           # {username}.{png|jpg|jpeg}
+    ├── core
+    │   ├── models          # database entities
+    │   │   └── tests       # database tests
+    │   ├── schemas         # endpoint schemes
+    │   └── settings.py     # database config
+    ├── main.py             # main entrypoint
+    └── views               # endpoint routers
+        └── tests           # endpoint tests
 ```
 
 ## Quickstart
@@ -23,5 +25,5 @@ To initialize server, you should run:
    $> python -m venv venv
    $> source venv/bin/activate
    $> python -m pip install -r requirements.txt
-   $> uvicorn main:app --app-dir src --reload
+   $> uvicorn main:app --app-dir app --reload
 ```
