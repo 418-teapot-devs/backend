@@ -14,7 +14,7 @@ def nextRound(board: Board) -> Board:
         # Only check for collisions against `_move`d robots
         board[i]._move_and_check_crash(board[:i])
     # Clean up dead robots
-    board = list(filter(lambda r: r._dmg <= MAX_DMG, board))
+    board = list(filter(lambda r: r._dmg < MAX_DMG, board))
     return board
 
 
