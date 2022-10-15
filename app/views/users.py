@@ -19,6 +19,7 @@ from app.util.errors import *
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
+from views.util import mail
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -54,12 +55,13 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         )
         commit()
 
-        # verify_token = create_access_token(
-        #     {"sub": "verify", "username": user.name},
-        #     timedelta(days=VERIFY_TOKEN_EXPIRE_DAYS),
-        # )
+        verify_token = create_access_token(
+            {"sub": "verify", "username": user.name},
+            timedelta(days=VERIFY_TOKEN_EXPIRE_DAYS),
+        )
 
-        # send verify token via e-mail
+        if "pytest" not in sys.modules:
+            mail.send_verification_token(user.e_mail, verify_token)
 
         login_token = create_access_token(
             {"sub": "login", "username": user.name},
@@ -145,3 +147,33 @@ def change_password(form_data: ChangePassWord, token: str = Header()):
 
         user.password = password_context.hash(form_data.new_password)
         commit()
+
+
+@router.get("/confirm", response_model=Token)
+def confirm(token: str):
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        username = payload.get("username")
+        subject = payload.get("sub")
+
+        if not username or not subject:
+            raise HTTPException(status_code=419, detail="literally how <invalid token>")
+
+        if subject != "verify":
+            raise HTTPException(status_code=419, detail="attempt to verify with login token")
+
+        with db_session:
+            user = User.get(name=username)
+
+            if not user:
+                raise HTTPException(status_code=419, detail="literally how <user does not exist>")
+
+            user.is_verified = True
+
+        token_data = {"sub": "login", "username": user.name}
+        token = create_access_token(token_data, timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS))
+
+        return Token(token=token)
+
+    except JWTError:
+        raise HTTPException(status_code=419, detail="invalid token")
