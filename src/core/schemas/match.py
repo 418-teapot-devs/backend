@@ -4,7 +4,7 @@ from typing import List
 class Create(BaseModel):
     name: str
     name_robot: str
-    max_player: int
+    max_players: int
     min_players: int
     creator_name: str
     rounds: int
