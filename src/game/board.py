@@ -28,3 +28,17 @@ def initBoard(files: List[str]) -> Board:
         r.initialize()
         board.append(r)
     return board
+
+
+def board2dict(board: Board) -> Dict[int, Tuple[float, float]]:
+    return { r._id: r._pos for r in board }
+
+
+def game2dict(game: List[Dict[int, Tuple[float, float]]]) -> Dict[int, Dict[str, List[float]]]:
+    summary = { r_id: { 'x': [], 'y': [] } for r_id in game[0].keys() }
+    # summary = { r_id: ([r_pos[0]], [r_pos[0]]) for r_id, r_pos in game[0].items() }
+    for round in game:
+        for r_id, pos in round.items():
+            summary[r_id]['x'].append(pos[0])
+            summary[r_id]['y'].append(pos[1])
+    return summary
