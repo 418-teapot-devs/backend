@@ -1,4 +1,3 @@
-
 from fastapi import Header, APIRouter, HTTPException
 from jose import jwt
 from pony.orm import commit, db_session, select
@@ -15,20 +14,26 @@ router = APIRouter()
 
 @router.get("/created")
 def register(token:str = Header()):
+
+
     username = get_current_user(token)
     with db_session:
+        # Robot(owner=User.get(name="alvaro69") , name="destructor")
         matches = select(m for m in Match if m.state == "Lobby" and m.host is User.get(name=username))[:]
         res = []
         for m in matches:
             robots = []
             for r in m.plays:
-                # avatqar_url is missing
-                # min, max_mlayer, is priviate missing
-                robots.append({"name": r.name,"username": r.owner.name})
+                # this will be used after merge with the refactor repository
+                # avatar_url =  f"assets/robots/{r.id}.png" if r.has_avatar else None
 
-            print(type(m.plays))
-            res.append({"name": m.name, "games": m.game_count,"rounds": m.round_count, "robots": robots})
+                robots.append({"name": r.name, "avatar_url": None,
+                               "username": r.owner.name})
 
+            res.append({"name": m.name, "max_players": m.max_players,
+                        "min_players": m.min_players,"games": m.game_count,
+                        "rounds": m.round_count, "is_private": False,
+                        "robots": robots})
     return res
 
 @router.post("/created")
@@ -38,10 +43,13 @@ def upload_match(form_data: Create, token:str = Header()):
     with db_session:
 
         host_robot = Robot.get(name=form_data.name_robot, owner=User.get(name=username))
+
         if host_robot is None:
             raise HTTPException(status_code=404,detail="Host robot not found")
 
-        m1 = Match(host=User.get(name=username),name=form_data.name,plays=[host_robot])
+        m1 = Match(host=User.get(name=username),name=form_data.name, 
+                   plays=[host_robot], max_players=form_data.max_players, 
+                   min_players=form_data.min_players, game_count=form_data.games, round_count=form_data.rounds)
         commit()
 
     return {}
