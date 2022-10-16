@@ -15,10 +15,13 @@ router = APIRouter()
 @router.get("/created")
 def register(token:str = Header()):
 
-
     username = get_current_user(token)
     with db_session:
-        # Robot(owner=User.get(name="alvaro69") , name="destructor")
+
+        host = User.get(name=username)
+        if host is None:
+            raise HTTPException(status_code=404,detail="User not found")
+
         matches = select(m for m in Match if m.state == "Lobby" and m.host is User.get(name=username))[:]
         res = []
         for m in matches:
@@ -42,14 +45,17 @@ def upload_match(form_data: Create, token:str = Header()):
 
     with db_session:
 
-        host_robot = Robot.get(name=form_data.name_robot, owner=User.get(name=username))
+        host = User.get(name=username)
+        if host is None:
+            raise HTTPException(status_code=404, detail="User not found")
 
+        host_robot = Robot.get(name=form_data.name_robot, owner=host)
         if host_robot is None:
             raise HTTPException(status_code=404,detail="Host robot not found")
 
-        m1 = Match(host=User.get(name=username),name=form_data.name, 
-                   plays=[host_robot], max_players=form_data.max_players, 
-                   min_players=form_data.min_players, game_count=form_data.games, round_count=form_data.rounds)
+        m1 = Match(host=host, name=form_data.name, plays=[host_robot],
+                   max_players=form_data.max_players, min_players=form_data.min_players,
+                   game_count=form_data.games, round_count=form_data.rounds)
         commit()
 
     return {}
