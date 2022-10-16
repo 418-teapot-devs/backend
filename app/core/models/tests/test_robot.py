@@ -32,6 +32,6 @@ def test_model():
         and Robot.exists(name="robot3")
     )
 
-    assert Robot[User["leo"], "robot1"].owner is User["leo"]
+    assert Robot.get(owner="leo", name="robot1").owner is User["leo"]
 
     db.rollback()
