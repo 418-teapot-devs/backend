@@ -2,7 +2,6 @@ from datetime import timedelta
 from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
-
 from main import app
 from views.users import create_access_token
 
@@ -20,18 +19,19 @@ def test_create_robot():
         "e_mail": "annaaimeri@gmail.com",
     }
 
-    response = cl.post(
-        f"/users/{json_to_queryparams(user)}"
-    )
+    response = cl.post(f"/users/{json_to_queryparams(user)}")
     assert response.status_code == 200
 
     data = response.json()
     token = data["token"]
-    fake_token = create_access_token({"sub": "login", "username": "pepito"}, timedelta(hours=1.0))
+    fake_token = create_access_token(
+        {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
+    )
 
     test_robots = [
-        ("cesco", token, "identity.py", None, 200),
-        ("lueme", token, "identity.py", "identity_avatar.png", 200),
+        ("cesco", token, "identity.py", None, 201),
+        ("lueme", token, "identity.py", "identity_avatar.png", 201),
+        ("oricolo", token, None, "identity_avatar.png", 422),
         ("fnazar", fake_token, "identity.py", None, 404),
         # ("hola", "hola", ["robot", "identity.py"], 200), TODO handle more jwt errors (fake token)
     ]
@@ -39,15 +39,13 @@ def test_create_robot():
     for robot_name, token, code, avatar, expected_code in test_robots:
         files = []
         if code:
-            files.append(("robot", code))
+            files.append(("code", code))
 
         if avatar:
             files.append(("avatar", avatar))
 
         response = cl.post(
-            f"/robots/?name={robot_name}",
-            headers={"token": token},
-            files=files
+            f"/robots/?name={robot_name}", headers={"token": token}, files=files
         )
         assert response.status_code == expected_code
 
@@ -75,18 +73,15 @@ def test_get_robots():
 
     for robot_name, code, avatar in test_robots:
         files = []
-        if code:
-            files.append(("robot", code))
+        files.append(("code", code))
 
         if avatar:
             files.append(("avatar", avatar))
 
         response = cl.post(
-            f"/robots/?name={robot_name}",
-            headers={"token": token},
-            files=files
+            f"/robots/?name={robot_name}", headers={"token": token}, files=files
         )
-        assert response.status_code == 200
+        assert response.status_code == 201
 
         response = cl.get("/robots/", headers={"token": token})
         robot = next(filter(lambda r: r["name"] == robot_name, list(response.json())))
