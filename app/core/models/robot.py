@@ -4,6 +4,7 @@ from core.models.database import db
 
 
 class Robot(db.Entity):
+    id = PrimaryKey(int, auto=True)
     owner = Required("User")
     name = Required(str, 32)
     # if robot has avatar, it is stord in /assets/avatars/robots/{owner.name}_{name}.png
@@ -14,4 +15,3 @@ class Robot(db.Entity):
     lost_matches = Required(int, default=0)
     matches_in = Set("Match", reverse="plays")
     composite_key(owner, name)
-    # PrimaryKey(owner, name)
