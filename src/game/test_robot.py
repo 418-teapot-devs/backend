@@ -36,9 +36,9 @@ def test_init_bot():
     r = RoboTest(1, (2, 3))
     r.initialize()
     assert r._id == 1
-    assert r._pos == (2, 3)
-    assert r._dir == 0
-    assert r._vel == 0
+    assert r.get_position() == (2, 3)
+    assert r.get_direction() == 0
+    assert r.get_velocity() == 0
     assert r.var == 90
 
 
@@ -46,8 +46,8 @@ def test_bot_vars():
     r = RoboTest(1, (2, 3))
     r.initialize()
     r.respond()
-    assert r._dir == 45
-    assert r._vel == 100
+    assert r.get_direction() == 45
+    assert r.get_velocity() == 100
     assert r.var == 135
 
 
@@ -56,10 +56,15 @@ def test_bot_move():
     r.initialize()
     r.respond()
     r._move_and_check_crash([])
-    assert r._pos == (
+    new_pos = (
         500 + 100 * DELTA_TIME * math.cos(math.radians(45)),
         500 + 100 * DELTA_TIME * math.sin(math.radians(45)),
     )
+    assert r.get_position() == new_pos
+    r._dmg = MAX_DMG
+    r.respond()
+    r._move_and_check_crash([])
+    assert r.get_position() == new_pos
 
 
 def test_bot_crash():
@@ -70,7 +75,7 @@ def test_bot_crash():
     r1.respond()
     r2.respond()
     r1._move_and_check_crash([r2])
-    assert r1._dmg == r2._dmg == COLLISION_DMG
+    assert r1.get_damage() == r2.get_damage() == COLLISION_DMG
 
 
 class NoMove(Robot):
@@ -86,4 +91,4 @@ def test_bot_wall():
     r1.initialize()
     r1.respond()
     r1._move_and_check_crash([])
-    assert r1._dmg == COLLISION_DMG
+    assert r1.get_damage() == COLLISION_DMG
