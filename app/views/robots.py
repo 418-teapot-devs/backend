@@ -15,7 +15,7 @@ def register(token:str = Header()):
 
     with db_session:
         res = []
-        for r in select(r for r in Robot): #recordar lo de chequear
+        for r in select(r for r in Robot if r.owner.name == username): #recordar lo de chequear
             print(r.id)
             if r.has_avatar:
                 res.append({"name": r.name, "id": r.id, "avatar": f"assets/robots/{r.id}.png"})

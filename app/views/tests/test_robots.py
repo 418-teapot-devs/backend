@@ -50,3 +50,48 @@ def test_create_robot():
             files=files
         )
         assert response.status_code == expected_code
+
+
+def test_get_robots():
+    user = {
+        "username": "leotorres",
+        "password": "AmoElQuartus21",
+        "e_mail": "leo@luis.tv",
+    }
+
+    response = cl.post(f"/users/{json_to_queryparams(user)}")
+    assert response.status_code == 200
+
+    data = response.json()
+    token = data["token"]
+
+    response = cl.get("/robots/", headers={"token": token})
+    assert not list(response.json())
+
+    test_robots = [
+        ("locke", "identity.py", None),
+        ("lueme", "identity.py", "identity_avatar.png"),
+    ]
+
+    for robot_name, code, avatar in test_robots:
+        files = []
+        if code:
+            files.append(("robot", code))
+
+        if avatar:
+            files.append(("avatar", avatar))
+
+        response = cl.post(
+            f"/robots/?name={robot_name}",
+            headers={"token": token},
+            files=files
+        )
+        assert response.status_code == 200
+
+        response = cl.get("/robots/", headers={"token": token})
+        robot = next(filter(lambda r: r["name"] == robot_name, list(response.json())))
+
+        if robot["avatar"]:
+            assert f"{robot['id']}" in robot["avatar"]
+        else:
+            assert not robot["avatar"]
