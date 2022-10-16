@@ -31,6 +31,12 @@ def create_robot(
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
+        if Robot.exists(owner=user, name=name):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Robot with name {name} already exists for user {user.name}",
+            )
+
         robot = Robot(owner=user, name=name, has_avatar=avatar is not None)
         commit()
 

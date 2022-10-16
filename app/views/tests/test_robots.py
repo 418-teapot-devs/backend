@@ -31,6 +31,7 @@ def test_create_robot():
     test_robots = [
         ("cesco", token, "identity.py", None, 201),
         ("lueme", token, "identity.py", "identity_avatar.png", 201),
+        ("lueme", token, "identity.py", "identity_avatar.png", 409),
         ("oricolo", token, None, "identity_avatar.png", 422),
         ("fnazar", fake_token, "identity.py", None, 404),
         # ("hola", "hola", ["robot", "identity.py"], 200), TODO handle more jwt errors (fake token)
