@@ -38,9 +38,9 @@ def test_model():
     assert Match.exists(name="partida1")
 
     assert (
-        (Robot[User["leo"], "robot1"] in Match[1].plays)
-        and (Robot[User["alvaro"], "robot2"] in Match[1].plays)
-        and (Robot[User["alvaro"], "robot2"] in Match[1].plays)
+        (Robot.get(owner="leo", name="robot1") in Match[1].plays)
+        and (Robot.get(owner="alvaro", name="robot2") in Match[1].plays)
+        and (Robot.get(owner="anna", name="robot3") in Match[1].plays)
     )
 
     assert Match[1].host is User["alvaro"]
