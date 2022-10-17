@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
 
+from core.models.user import User
+from core.schemas.user import Login, Register, Token
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from jose import jwt
 from passlib.context import CryptContext
 from pony.orm import commit, db_session
-
-from core.models.user import User
-from core.schemas.user import Login, Register, Token
 from views import JWT_ALGORITHM, JWT_SECRET_KEY
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0

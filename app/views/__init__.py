@@ -1,25 +1,22 @@
-from jose import JWTError, jwt
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
+
 class TokenData(BaseModel):
     username: str | None = None
+
 
 JWT_SECRET_KEY = "92294169bb3637efe9a56293025e8d463089d43f8f1bd1e78c67c8e197a7ef1e"
 JWT_ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 class TokenData(BaseModel):
     username: str | None = None
 
-
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
@@ -35,7 +32,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-#    user = get_user(fake_users_db, username=token_data.username)
-#    if user is None:
-#        raise credentials_exception
+    #    user = get_user(fake_users_db, username=token_data.username)
+    #    if user is None:
+    #        raise credentials_exception
     return username
