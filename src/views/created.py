@@ -1,4 +1,4 @@
-from fastapi import Header, APIRouter, HTTPException
+from fastapi import Header, APIRouter, HTTPException, Response
 from jose import jwt
 from pony.orm import commit, db_session, select
 
@@ -13,7 +13,7 @@ from views import get_current_user,JWT_ALGORITHM, JWT_SECRET_KEY
 router = APIRouter()
 
 @router.get("/created")
-def register(token:str = Header()):
+def get_created_matches(token:str = Header()):
 
     username = get_current_user(token)
     with db_session:
@@ -46,6 +46,7 @@ def upload_match(form_data: Create, token:str = Header()):
     with db_session:
 
         host = User.get(name=username)
+
         if host is None:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -58,4 +59,4 @@ def upload_match(form_data: Create, token:str = Header()):
                    game_count=form_data.games, round_count=form_data.rounds)
         commit()
 
-    return {}
+    return Response(status_code=201)
