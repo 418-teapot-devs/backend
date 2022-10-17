@@ -34,6 +34,8 @@ def test_model():
         plays={robot1, robot2, robot3},
         state="lobyy",
         robot_count=3,
+        max_players=4,
+        min_players=2
     )
     assert Match.exists(name="partida1")
 
