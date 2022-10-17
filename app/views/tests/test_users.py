@@ -2,6 +2,7 @@ from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
 from jose import jwt
+
 from main import app
 from views import JWT_ALGORITHM, JWT_SECRET_KEY
 

@@ -4,6 +4,7 @@ from core.models.database import db
 
 
 class Match(db.Entity):
+    id = PrimaryKey(int, auto=True)
     host = Required("User", reverse="matches_hosts")
     name = Required(str, 32)
     robot_count = Required(int, default=1)

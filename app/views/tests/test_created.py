@@ -1,10 +1,8 @@
 from urllib.parse import quote_plus
 
-from core.models import Match, Robot, db
 from fastapi.testclient import TestClient
-from jose import jwt
+
 from main import app
-from pony.orm import db_session
 
 cl = TestClient(app)
 
@@ -368,7 +366,7 @@ def test_get_created():
     assert response.status_code == 200
     assert not response.json()
 
-    for (
+    for i, (
         token,
         name,
         max_p,
@@ -377,18 +375,16 @@ def test_get_created():
         rounds,
         is_private,
         robots,
-    ) in test_get_matches:
+    ) in enumerate(test_get_matches):
         response = cl.get("/matches/created", headers={"token": token})
 
         assert response.status_code == 200
-        assert response.json() == [
-            {
-                "name": name,
-                "max_players": min_p,
-                "min_players": max_p,
-                "games": games,
-                "rounds": rounds,
-                "is_private": is_private,
-                "robots": robots,
-            }
-        ]
+        assert response.json()[i] == {
+            "name": name,
+            "max_players": min_p,
+            "min_players": max_p,
+            "games": games,
+            "rounds": rounds,
+            "is_private": is_private,
+            "robots": robots,
+        }

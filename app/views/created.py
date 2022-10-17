@@ -1,9 +1,10 @@
+from fastapi import APIRouter, Header, HTTPException, Response
+from pony.orm import commit, db_session, select
+
 from core.models.match import Match
 from core.models.robot import Robot
 from core.models.user import User
-from core.schemas.match import Create
-from fastapi import APIRouter, Header, HTTPException, Response
-from pony.orm import commit, db_session, select
+from core.schemas.match import MatchCreateRequest
 from views import get_current_user
 
 router = APIRouter()
@@ -48,7 +49,7 @@ def get_created_matches(token: str = Header()):
 
 
 @router.post("/created")
-def upload_match(form_data: Create, token: str = Header()):
+def upload_match(form_data: MatchCreateRequest, token: str = Header()):
     username = get_current_user(token)
 
     with db_session:
@@ -70,7 +71,7 @@ def upload_match(form_data: Create, token: str = Header()):
             min_players=form_data.min_players,
             game_count=form_data.games,
             round_count=form_data.rounds,
-            state=form_data.state,
+            state="Lobby",
         )
         commit()
 
