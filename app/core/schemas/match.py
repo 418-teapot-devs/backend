@@ -6,11 +6,8 @@ class Create(BaseModel):
     name_robot: str
     max_players: int
     min_players: int
-    creator_name: str
     rounds: int
     games: int
     password: str
-    status: str
     robotId: int
-#    robots: List[Create]
 
