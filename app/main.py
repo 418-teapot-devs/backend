@@ -7,6 +7,7 @@ from views.created import router as CreatedRouter
 from views.joined import router as JoinedRouter
 from views.public import router as PublicRouter
 from views.iniciated import router as IniciatedRouter
+from views.simulate import router as SimulateRouter
 
 app = FastAPI(
     title="PyRobots API",
@@ -31,6 +32,8 @@ app.include_router(CreatedRouter, prefix="/matches")
 app.include_router(JoinedRouter, prefix="/matches")
 app.include_router(PublicRouter, prefix="/matches")
 app.include_router(IniciatedRouter, prefix="/matches")
+app.include_router(SimulateRouter, prefix="/simulate")
+
 
 @app.get("/")
 def root():

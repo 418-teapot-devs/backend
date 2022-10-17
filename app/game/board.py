@@ -21,7 +21,7 @@ def nextRound(board: Board) -> Board:
 def initBoard(files: List[str]) -> Board:
     board = []
     for i, file in enumerate(files):
-        module = importlib.import_module(file, "game.robots")
+        module = importlib.import_module(file, "assets.robots")
         classes = inspect.getmembers(module, inspect.isclass)
         classes = list(filter(lambda c: c[0] != "Robot", classes))
         assert len(classes) == 1
