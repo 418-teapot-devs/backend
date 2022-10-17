@@ -56,7 +56,7 @@ def upload_match(form_data: Create, token:str = Header()):
 
         m1 = Match(host=host, name=form_data.name, plays=[host_robot],
                    max_players=form_data.max_players, min_players=form_data.min_players,
-                   game_count=form_data.games, round_count=form_data.rounds)
+                   game_count=form_data.games, round_count=form_data.rounds, state=form_data.state)
         commit()
 
     return Response(status_code=201)

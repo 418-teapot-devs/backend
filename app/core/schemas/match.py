@@ -9,5 +9,6 @@ class Create(BaseModel):
     rounds: int
     games: int
     password: str
+    state: str
     robotId: int
 
