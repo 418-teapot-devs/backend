@@ -5,6 +5,7 @@ from views.users import router as UserRouter
 from views.robots import router as RobotRouter
 from views.created import router as CreatedRouter
 from views.joined import router as JoinedRouter
+from views.public import router as PublicRouter
 
 app = FastAPI(
     title="PyRobots API",
@@ -25,8 +26,10 @@ app.add_middleware(
 
 app.include_router(UserRouter, prefix="/users")
 app.include_router(RobotRouter, prefix="/robots")
-app.include_router(CreatedRouter, prefix="/matchs")
-app.include_router(JoinedRouter, prefix="/joined")
+app.include_router(CreatedRouter, prefix="/matches")
+app.include_router(JoinedRouter, prefix="/matches")
+app.include_router(PublicRouter, prefix="/matches")
+
 
 @app.get("/")
 def root():
