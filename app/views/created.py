@@ -2,11 +2,9 @@ from core.models.match import Match
 from core.models.robot import Robot
 from core.models.user import User
 from core.schemas.match import Create
-from core.schemas.user import Login, Register, Token
 from fastapi import APIRouter, Header, HTTPException, Response
-from jose import jwt
 from pony.orm import commit, db_session, select
-from views import JWT_ALGORITHM, JWT_SECRET_KEY, get_current_user
+from views import get_current_user
 
 router = APIRouter()
 
@@ -64,7 +62,7 @@ def upload_match(form_data: Create, token: str = Header()):
         if host_robot is None:
             raise HTTPException(status_code=404, detail="Host robot not found")
 
-        m1 = Match(
+        Match(
             host=host,
             name=form_data.name,
             plays=[host_robot],

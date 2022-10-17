@@ -44,7 +44,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
 
         # store avatar to disk
         if avatar:
-            with open(f"assets/users/{schema.username}.png", "wb") as f:
+            with open(f"app/assets/users/{schema.username}.png", "wb") as f:
                 f.write(avatar.file.read())
 
         user = User(

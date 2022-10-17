@@ -1,10 +1,8 @@
 from core.models.match import Match
-from core.models.robot import Robot
 from core.models.user import User
 from fastapi import APIRouter, Header, HTTPException
-from jose import jwt
-from pony.orm import commit, db_session, select
-from views import JWT_ALGORITHM, JWT_SECRET_KEY, get_current_user
+from pony.orm import db_session, select
+from views import get_current_user
 
 router = APIRouter()
 
@@ -13,7 +11,11 @@ router = APIRouter()
 def get_joined(token: str = Header()):
     username = get_current_user(token)
     with db_session:
-        select(m for m in Match).show()
+        host = User.get(name=username)
+        if host is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # select(m for m in Match).show()
 
         matches = select(
             m
