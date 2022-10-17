@@ -11,11 +11,15 @@ from views import get_current_user,JWT_ALGORITHM, JWT_SECRET_KEY
 router = APIRouter()
 
 @router.get("/public")
-def register(token:str = Header()):
+def get_public(token:str = Header()):
     username = get_current_user(token)
     with db_session:
 
-        matches = select(m for m in Match if m.state == "Lobby" and (m.host is not User.get(name=username) ))[:]
+        host = User.get(name=username)
+        if host is None:
+            raise HTTPException(status_code=404,detail="User not found")
+
+        matches = select(m for m in Match if m.state == "Lobby" and (m.host is not host))[:]
         res = []
         for m in matches:
             robots = []

@@ -10,14 +10,18 @@ from views import get_current_user,JWT_ALGORITHM, JWT_SECRET_KEY
 router = APIRouter()
 
 @router.get("/iniciated")
-def register(token:str = Header()):
+def get_iniciated(token:str = Header()):
  
     username = get_current_user(token)
     with db_session:
 
+        host = User.get(name=username)
+        if host is None:
+            raise HTTPException(status_code=404,detail="User not found")
+
         matches = select(m for m in Match for r in m.plays if 
                     (m.state == "InGame" or m.state == "Finished") 
-                    and r.owner is User.get(name=username))[:]
+                    and r.owner is host)[:]
         res = []
         for m in matches:
             robots = []
