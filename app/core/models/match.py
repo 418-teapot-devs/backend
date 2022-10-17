@@ -12,4 +12,4 @@ class Match(db.Entity):
     game_count = Required(int, default=100)
     round_count = Required(int, default=10000)
     plays = Set("Robot", reverse="matches_in")
-    state = Required(str, 6, default="Lobby")
+    state = Required(str, 8, default="Lobby")
