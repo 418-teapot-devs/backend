@@ -1,5 +1,7 @@
-from .board import *
 import game.robot
+
+from .board import *
+
 
 def test_board_init():
     b = initBoard([".id_bot"])
@@ -14,6 +16,11 @@ def test_game_exec():
         b = nextRound(b)
         g.append(board2dict(b))
 
-    expected = {0: {"x": [500] * 6, "y": [500] * 6},
-        1: {"x": [500, 500.0, 490.0, 490.0, 500.0, 500.0], "y": [500, 510.0, 510.0, 500.0, 500.0, 510.0]}}
+    expected = {
+        0: {"x": [500] * 6, "y": [500] * 6},
+        1: {
+            "x": [500, 500.0, 490.0, 490.0, 500.0, 500.0],
+            "y": [500, 510.0, 510.0, 500.0, 500.0, 510.0],
+        },
+    }
     assert game2dict(g) == expected

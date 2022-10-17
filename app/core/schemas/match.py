@@ -1,7 +1,7 @@
-from pydantic import BaseModel, EmailStr, HttpUrl, validator
-from typing import List
+from pydantic import BaseModel
 
-class Create(BaseModel):
+
+class MatchCreateRequest(BaseModel):
     name: str
     name_robot: str
     max_players: int
@@ -9,6 +9,7 @@ class Create(BaseModel):
     rounds: int
     games: int
     password: str
-    state: str
-    robotId: int
-
+    # use this instead of name_robot once we
+    # figure out how to reset the database
+    # between tests
+    # robot_id: int

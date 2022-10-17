@@ -2,6 +2,7 @@ from datetime import timedelta
 from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
+
 from main import app
 from views.users import create_access_token
 

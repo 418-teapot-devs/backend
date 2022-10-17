@@ -1,7 +1,8 @@
-from core.models.robot import Robot
-from core.models.user import User
 from fastapi import APIRouter, Header, HTTPException, Response, UploadFile
 from pony.orm import commit, db_session, select
+
+from core.models.robot import Robot
+from core.models.user import User
 from views import get_current_user
 
 router = APIRouter()
@@ -14,7 +15,7 @@ def get_robot(token: str = Header()):
     with db_session:
         robots = []
         for robot in select(r for r in Robot if r.owner.name == username):
-            avatar = f"assets/robots/{robot.id}.png" if robot.has_avatar else None
+            avatar = f"app/assets/robots/{robot.id}.png" if robot.has_avatar else None
             robots.append({"name": robot.name, "id": robot.id, "avatar": avatar})
 
     return robots

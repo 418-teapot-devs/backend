@@ -1,11 +1,12 @@
 from os.path import isfile
-from fastapi import APIRouter, HTTPException, Header
-from pony.orm import db_session
-from core.models.robot import Robot
-from views import get_current_user
 
-from game.board import board2dict, game2dict, initBoard, nextRound
+from fastapi import APIRouter, Header, HTTPException
+from pony.orm import db_session
+
+from core.models.robot import Robot
 from core.schemas.simulation import SimulationRequest
+from game.board import board2dict, game2dict, initBoard, nextRound
+from views import get_current_user
 
 DEFAULT_ROUNDS = 100
 BOT_DIR = "app/assets/robots"
@@ -22,7 +23,10 @@ def simulate(schema: SimulationRequest, token: str = Header()):
             raise HTTPException(status_code=404, detail=f"robot {bot} not found")
         with db_session:
             if Robot.get(id=bot).owner.name != username:
-                raise HTTPException(status_code=403, detail=f"robot requested is not owned by user {username}")
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"robot requested is not owned by user {username}",
+                )
     rounds = schema.rounds if schema.rounds is not None else DEFAULT_ROUNDS
 
     b = initBoard(list(f".{bot}" for bot in schema.robots))

@@ -1,8 +1,10 @@
+from typing import Any, Dict, List
+
 from pydantic import BaseModel, validator
-from typing import List, Any, Dict
 
 MAX_BOTS = 2
 MAX_ROUNDS = 1000
+
 
 class SimulationRequest(BaseModel):
     rounds: int | None
@@ -23,4 +25,3 @@ class SimulationRequest(BaseModel):
 
 class SimulationResults(BaseModel):
     robots: Dict[int, Dict[str, List[float]]]
-
