@@ -157,16 +157,16 @@ def confirm(token: str):
         subject = payload.get("sub")
 
         if not username or not subject:
-            raise HTTPException(status_code=419, detail="literally how <invalid token>")
+            raise HTTPException(status_code=401, detail="invalid token")
 
         if subject != "verify":
-            raise HTTPException(status_code=419, detail="attempt to verify with login token")
+            raise HTTPException(status_code=403, detail="attempt to verify with login token")
 
         with db_session:
             user = User.get(name=username)
 
             if not user:
-                raise HTTPException(status_code=419, detail="literally how <user does not exist>")
+                raise HTTPException(status_code=404, detail="user does not exist")
 
             user.is_verified = True
 
@@ -176,4 +176,4 @@ def confirm(token: str):
         return Token(token=token)
 
     except JWTError:
-        raise HTTPException(status_code=419, detail="invalid token")
+        raise HTTPException(status_code=401, detail="invalid token")
