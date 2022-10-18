@@ -4,13 +4,13 @@ from .board import *
 
 
 def test_board_init():
-    b = initBoard([".id_bot"])
+    b = initBoard([".test_id_bot"])
     assert len(b) == 1
     assert issubclass(type(b[0]), game.robot.Robot)
 
 
 def test_game_exec():
-    b = initBoard([".id_bot", ".loop_bot"])
+    b = initBoard([".test_id_bot", ".test_loop_bot"])
     g = [board2dict(b)]
     for _ in range(5):
         b = nextRound(b)
