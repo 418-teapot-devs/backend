@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Callable, Dict
+
 from fastapi import APIRouter, Header, HTTPException, Response
 from pony.orm import commit, db_session, select
 
@@ -11,11 +12,13 @@ from app.views import get_current_user
 
 router = APIRouter()
 
+
 class ModelName(str, Enum):
     created = "created"
     iniciated = "iniciated"
     joined = "joined"
     public = "public"
+
 
 query_base = select((m, r) for m in Match for r in m.plays)
 
@@ -29,12 +32,20 @@ def get_matches(model_name: ModelName, token: str = Header()):
         if cur_user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-
         queries: Dict = {
-            ModelName.created: query_base.filter(lambda m, _: m.state == "Lobby" and m.host is cur_user),
-            ModelName.iniciated: query_base.filter(lambda m, r: (m.state == "InGame" or m.state == "Finished") and r.owner is cur_user),
-            ModelName.joined: query_base.filter(lambda m, r: m.state == "Lobby" and r.owner is cur_user),
-            ModelName.public: query_base.filter(lambda m, _: m.state == "Lobby" and m.host is not cur_user),
+            ModelName.created: query_base.filter(
+                lambda m, _: m.state == "Lobby" and m.host is cur_user
+            ),
+            ModelName.iniciated: query_base.filter(
+                lambda m, r: (m.state == "InGame" or m.state == "Finished")
+                and r.owner is cur_user
+            ),
+            ModelName.joined: query_base.filter(
+                lambda m, r: m.state == "Lobby" and r.owner is cur_user
+            ),
+            ModelName.public: query_base.filter(
+                lambda m, _: m.state == "Lobby" and m.host is not cur_user
+            ),
         }
         print(queries[ModelName.iniciated].get_sql())
 

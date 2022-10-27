@@ -1,5 +1,4 @@
 from app.game import robot
-
 from app.game.board import *
 
 

@@ -3,19 +3,21 @@
 ## File structure
 ```
 .
-└── app
-   ├── assets
-   │  ├── robots
-   │  │  ├── avatar  # {robot_id}.{png|jpg|jpeg}
-   │  │  └── code    # {robot_id}.py
-   │  └── users      # {username}.{png|jpg|jpeg}
-   ├── game          # core game logic
-   ├── models        # database entities
-   │  └── tests      # database tests
-   ├── schemas       # endpoint schemes
-   ├── views         # endpoint routers
-   │  └── tests      # endpoint tests
-   └── main.py       # main entrypoint
+├── app
+│   ├── assets
+│   │   ├── robots
+│   │   │  ├── avatar  # {robot_id}.{png|jpg|jpeg}
+│   │   │  └── code    # {robot_id}.py
+│   │   └── users      # {username}.{png|jpg|jpeg}
+│   ├── game           # core game logic
+│   ├── main.py        # main entrypoint
+│   ├── models         # database entities
+│   ├── schemas        # endpoint schemes
+│   └── views          # endpoint routers
+└── tests
+    ├── game
+    ├── models
+    └── views
 ```
 
 ## Quickstart
