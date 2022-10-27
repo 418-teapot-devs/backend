@@ -6,3 +6,5 @@ class RobotResponse(BaseModel):
     robot_id: int
     name: str
     avatar: str | None
+    win_rate: int
+    mmr: int
