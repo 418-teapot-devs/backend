@@ -4,34 +4,34 @@ from app.models import Robot, User, db
 
 
 @db_session
-def test_model():
-    user1 = User(name="leo", email="leo@gemail.com", password="123")
+def test_robot_model():
+    bruno = User(name="bruno", email="bruno@gmail.com", password="123")
 
-    user2 = User(name="alvaro", email="alvaro@mi.unc.edu.ar", password="12334138924")
+    cesco = User(name="cesco", email="cesco@mi.unc.edu.ar", password="12334138924")
 
-    user3 = User(name="anna", email="anna@mi.unc.edu.ar", password="1234331234")
-
-    Robot(
-        name="robot1",
-        owner=user1,
-    )
+    lueme = User(name="lueme", email="lueme@mi.unc.edu.ar", password="1234331234")
 
     Robot(
-        name="robot2",
-        owner=user2,
+        name="amoonguss",
+        owner=bruno,
     )
 
     Robot(
-        name="robot3",
-        owner=user3,
+        name="zubat",
+        owner=cesco,
     )
 
-    assert (
-        Robot.exists(name="robot1")
-        and Robot.exists(name="robot2")
-        and Robot.exists(name="robot3")
+    Robot(
+        name="ledian",
+        owner=lueme,
     )
 
-    assert Robot.get(owner="leo", name="robot1").owner is User["leo"]
+    assert Robot.exists(name="amoonguss")
+    assert Robot.exists(name="zubat")
+    assert Robot.exists(name="ledian")
+
+    assert Robot.get(owner="bruno", name="amoonguss").owner is bruno
+    assert Robot.get(owner="cesco", name="zubat").owner is cesco
+    assert Robot.get(owner="lueme", name="ledian").owner is lueme
 
     db.rollback()
