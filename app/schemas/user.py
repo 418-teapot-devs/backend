@@ -18,7 +18,7 @@ pass_validator = (
 class Register(BaseModel):
     username: str
     password: str
-    e_mail: EmailStr
+    email: EmailStr
 
     @validator("password")
     def password_is_correct(cls, v):

@@ -16,20 +16,20 @@ def test_created_invalid_match():
         {
             "username": "alvaro",
             "password": "MILC(man,i love ceimaf)123",
-            "e_mail": "a@gmail.com",
+            "email": "a@gemail.com",
         },
         {
             "username": "bruno",
             "password": "h0la soy del Monse",
-            "e_mail": "b@gmail.com",
+            "email": "b@gemail.com",
         },
-        {"username": "leo", "password": "Burrito21", "e_mail": "l@gmail.com"},
+        {"username": "leo", "password": "Burrito21", "email": "l@gemail.com"},
     ]
 
     tokens = {}
     for user in users:
         response = cl.post(f"/users/{json_to_queryparams(user)}")
-        assert response.status_code == 200
+        assert response.status_code == 201
 
         data = response.json()
         tokens[user["username"]] = data["token"]
@@ -113,23 +113,23 @@ def test_created_invalid_match():
 
 def test_post_created():
     users = [
-        {"username": "bash", "password": "Reg2Loc_a", "e_mail": "a1@gmail.com"},
+        {"username": "bash", "password": "Reg2Loc_a", "email": "a1@gemail.com"},
         {
             "username": "bruno1",
             "password": "h0la soy del Monse",
-            "e_mail": "b1@gmail.com",
+            "email": "b1@gemail.com",
         },
         {
             "username": "leo1",
             "password": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            "e_mail": "l1@gmail.com",
+            "email": "l1@gemail.com",
         },
     ]
 
     tokens = {}
     for user in users:
         response = cl.post(f"/users/{json_to_queryparams(user)}")
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
 
         tokens[user["username"]] = data["token"]
@@ -217,20 +217,20 @@ def test_get_created():
         {
             "username": "alvaro2",
             "password": "MILC(man,i love ceimaf)123",
-            "e_mail": "a2@gmail.com",
+            "email": "a2@gemail.com",
         },
         {
             "username": "bruno2",
             "password": "h0la soy del Monse",
-            "e_mail": "b2@gmail.com",
+            "email": "b2@gemail.com",
         },
-        {"username": "leo2", "password": "Burrito21", "e_mail": "l2@gmail.com"},
+        {"username": "leo2", "password": "Burrito21", "email": "l2@gemail.com"},
     ]
 
     tokens = {}
     for user in users:
         response = cl.post(f"/users/{json_to_queryparams(user)}")
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
 
         tokens[user["username"]] = data["token"]

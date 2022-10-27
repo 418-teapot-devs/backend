@@ -27,7 +27,7 @@ def create_access_token(data: dict, expires_delta: timedelta):
     return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 
-@router.post("/", response_model=Token)
+@router.post("/", response_model=Token, status_code=201)
 def register(schema: Register = Depends(), avatar: UploadFile | None = None):
     if avatar and avatar.content_type != "image/png":
         raise HTTPException(status_code=422, detail="invalid picture format")
@@ -37,7 +37,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         if User.exists(name=schema.username):
             err.append("Username was taken!")
 
-        if User.exists(e_mail=schema.e_mail):
+        if User.exists(email=schema.email):
             err.append("E-Mail was taken!")
 
         if len(err) > 0:
@@ -51,7 +51,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         user = User(
             name=schema.username,
             password=password_context.hash(schema.password),
-            e_mail=schema.e_mail,
+            email=schema.email,
             has_avatar=avatar is not None,
         )
         commit()

@@ -5,13 +5,13 @@ from app.models import Match, Robot, User, db
 
 @db_session
 def test_model():
-    user1 = User(name="leo", e_mail="leo@gmail.com", password="123")
+    user1 = User(name="leo", email="leo@gemail.com", password="123")
 
     user2 = User(
-        name="alvaro", e_mail="alvaro@mi.unc.edu.ar", password="aguante el ceimaf"
+        name="alvaro", email="alvaro@mi.unc.edu.ar", password="aguante el ceimaf"
     )
 
-    user3 = User(name="anna", e_mail="anna@mi.unc.edu.ar", password="1234331234")
+    user3 = User(name="anna", email="anna@mi.unc.edu.ar", password="1234331234")
 
     robot1 = Robot(
         name="robot1",

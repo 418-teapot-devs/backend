@@ -17,11 +17,11 @@ def test_create_robot():
     user = {
         "username": "annaaimeri",
         "password": "AlpacaTactica158",
-        "e_mail": "annaaimeri@gmail.com",
+        "email": "annaaimeri@gemail.com",
     }
 
     response = cl.post(f"/users/{json_to_queryparams(user)}")
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()
     token = data["token"]
@@ -56,11 +56,11 @@ def test_get_robots():
     user = {
         "username": "leotorres",
         "password": "AmoElQuartus21",
-        "e_mail": "leo@luis.tv",
+        "email": "leo@luis.tv",
     }
 
     response = cl.post(f"/users/{json_to_queryparams(user)}")
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()
     token = data["token"]
