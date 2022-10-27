@@ -1,10 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.views.created import router as CreatedRouter
-from app.views.iniciated import router as IniciatedRouter
-from app.views.joined import router as JoinedRouter
-from app.views.public import router as PublicRouter
+from app.views.matches import router as MatchesRouter
 from app.views.robots import router as RobotRouter
 from app.views.simulate import router as SimulateRouter
 from app.views.users import router as UserRouter
@@ -28,10 +25,7 @@ app.add_middleware(
 
 app.include_router(UserRouter, prefix="/users")
 app.include_router(RobotRouter, prefix="/robots")
-app.include_router(CreatedRouter, prefix="/matches")
-app.include_router(JoinedRouter, prefix="/matches")
-app.include_router(PublicRouter, prefix="/matches")
-app.include_router(IniciatedRouter, prefix="/matches")
+app.include_router(MatchesRouter, prefix="/matches")
 app.include_router(SimulateRouter, prefix="/simulate")
 
 
