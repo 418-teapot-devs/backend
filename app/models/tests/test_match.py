@@ -1,6 +1,6 @@
 from pony.orm import db_session
 
-from core.models import Match, Robot, User, db
+from app.models import Match, Robot, User, db
 
 
 @db_session

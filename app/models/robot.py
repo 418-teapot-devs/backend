@@ -1,6 +1,6 @@
 from pony.orm import PrimaryKey, Required, Set, composite_key
 
-from core.models.database import db
+from app.models.database import db
 
 
 class Robot(db.Entity):

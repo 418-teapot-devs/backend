@@ -1,6 +1,6 @@
 from pony.orm import PrimaryKey, Required, Set
 
-from core.models.database import db
+from app.models.database import db
 
 
 class User(db.Entity):

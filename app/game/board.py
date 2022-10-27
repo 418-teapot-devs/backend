@@ -2,7 +2,7 @@ import importlib
 import inspect
 from typing import Dict, List, Tuple
 
-from .robot import MAX_DMG, Robot
+from app.game.robot import MAX_DMG, Robot
 
 Board = List[Robot]
 
@@ -21,7 +21,7 @@ def nextRound(board: Board) -> Board:
 def initBoard(files: List[str]) -> Board:
     board = []
     for i, file in enumerate(files):
-        module = importlib.import_module(file, "assets.robots")
+        module = importlib.import_module(file, "app.assets.robots")
         classes = inspect.getmembers(module, inspect.isclass)
         classes = list(filter(lambda c: c[0] != "Robot", classes))
         assert len(classes) == 1

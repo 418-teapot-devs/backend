@@ -2,7 +2,7 @@ from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
 
-from main import app
+from app.main import app
 
 cl = TestClient(app)
 

@@ -1,12 +1,12 @@
-import game.robot
+from app.game import robot
 
-from .board import *
+from app.game.board import *
 
 
 def test_board_init():
     b = initBoard([".test_id_bot"])
     assert len(b) == 1
-    assert issubclass(type(b[0]), game.robot.Robot)
+    assert issubclass(type(b[0]), robot.Robot)
 
 
 def test_game_exec():

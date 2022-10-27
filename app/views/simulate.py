@@ -3,10 +3,10 @@ from os.path import isfile
 from fastapi import APIRouter, Header, HTTPException
 from pony.orm import db_session
 
-from core.models.robot import Robot
-from core.schemas.simulation import SimulationRequest
-from game.board import board2dict, game2dict, initBoard, nextRound
-from views import get_current_user
+from app.models.robot import Robot
+from app.schemas.simulation import SimulationRequest
+from app.game.board import board2dict, game2dict, initBoard, nextRound
+from app.views import get_current_user
 
 DEFAULT_ROUNDS = 100
 BOT_DIR = "app/assets/robots"

@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from views.created import router as CreatedRouter
-from views.iniciated import router as IniciatedRouter
-from views.joined import router as JoinedRouter
-from views.public import router as PublicRouter
-from views.robots import router as RobotRouter
-from views.simulate import router as SimulateRouter
-from views.users import router as UserRouter
+from app.views.created import router as CreatedRouter
+from app.views.iniciated import router as IniciatedRouter
+from app.views.joined import router as JoinedRouter
+from app.views.public import router as PublicRouter
+from app.views.robots import router as RobotRouter
+from app.views.simulate import router as SimulateRouter
+from app.views.users import router as UserRouter
 
 app = FastAPI(
     title="PyRobots API",

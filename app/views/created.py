@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Header, HTTPException, Response
 from pony.orm import commit, db_session, select
 
-from core.models.match import Match
-from core.models.robot import Robot
-from core.models.user import User
-from core.schemas.match import MatchCreateRequest
-from views import get_current_user
+from app.models.match import Match
+from app.models.robot import Robot
+from app.models.user import User
+from app.schemas.match import MatchCreateRequest
+from app.views import get_current_user
 
 router = APIRouter()
 

@@ -2,7 +2,7 @@ import sys
 
 from pony.orm import Database
 
-from core.settings import *
+from app.settings import *
 
 db = Database()
 
