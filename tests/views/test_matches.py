@@ -93,7 +93,7 @@ def test_created_invalid_match():
         expected_code,
     ) in test_matches:
         response = cl.post(
-            "/matches/created",
+            "/matches/",
             headers={"token": token},
             json={
                 "name": m_name,
@@ -194,7 +194,7 @@ def test_post_created():
         expected_code,
     ) in test_matches:
         response = cl.post(
-            "/matches/created",
+            "/matches/",
             headers={"token": token},
             json={
                 "name": m_name,
@@ -320,7 +320,7 @@ def test_get_created():
         expected_code,
     ) in test_matches:
         response = cl.post(
-            "/matches/created",
+            "/matches/",
             headers={"token": token},
             json={
                 "name": m_name,
@@ -361,7 +361,7 @@ def test_get_created():
     ]
 
     # TODO add test for when get should return []
-    response = cl.get("/matches/created", headers={"token": tokens["alvaro2"]})
+    response = cl.get("/matches/?match_type=created", headers={"token": tokens["alvaro2"]})
 
     assert response.status_code == 200
     assert not response.json()
@@ -376,7 +376,7 @@ def test_get_created():
         is_private,
         robots,
     ) in enumerate(test_get_matches):
-        response = cl.get("/matches/created", headers={"token": token})
+        response = cl.get("/matches/?match_type=created", headers={"token": token})
 
         assert response.status_code == 200
         assert response.json()[i] == {
