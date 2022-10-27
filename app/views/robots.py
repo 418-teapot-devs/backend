@@ -3,6 +3,7 @@ from pony.orm import commit, db_session, select
 
 from app.models.robot import Robot
 from app.models.user import User
+from app.schemas.robot import RobotResponse
 from app.views import get_current_user
 
 router = APIRouter()
@@ -16,8 +17,7 @@ def get_robot(token: str = Header()):
         robots = []
         for robot in select(r for r in Robot if r.owner.name == username):
             avatar = f"app/assets/robots/{robot.id}.png" if robot.has_avatar else None
-            robots.append({"name": robot.name, "id": robot.id, "avatar": avatar})
-
+            robots.append(RobotResponse(robot_id=robot.id, name=robot.name, avatar=avatar))
     return robots
 
 

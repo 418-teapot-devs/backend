@@ -89,6 +89,6 @@ def test_get_robots():
         robot = next(filter(lambda r: r["name"] == robot_name, list(response.json())))
 
         if robot["avatar"]:
-            assert f"{robot['id']}" in robot["avatar"]
+            assert f"{robot['robot_id']}" in robot["avatar"]
         else:
             assert not robot["avatar"]
