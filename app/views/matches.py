@@ -15,7 +15,7 @@ router = APIRouter()
 
 class MatchType(str, Enum):
     created = "created"
-    iniciated = "iniciated"
+    started = "started"
     joined = "joined"
     public = "public"
 
@@ -36,7 +36,7 @@ def get_matches(match_type: MatchType, token: str = Header()):
             MatchType.created: query_base.filter(
                 lambda m, _: m.state == "Lobby" and m.host is cur_user
             ),
-            MatchType.iniciated: query_base.filter(
+            MatchType.started: query_base.filter(
                 lambda m, r: (m.state == "InGame" or m.state == "Finished")
                 and r.owner is cur_user
             ),
