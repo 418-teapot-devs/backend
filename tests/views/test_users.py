@@ -3,6 +3,7 @@ from urllib.parse import quote_plus
 from fastapi.testclient import TestClient
 from jose import jwt
 
+from tests import ASSETS_DIR
 from app.main import app
 from app.views import JWT_ALGORITHM, JWT_SECRET_KEY
 
@@ -120,7 +121,7 @@ def test_users_avatar():
     }
     response = cl.post(
         f"/users/{json_to_queryparams(json)}",
-        files=[("imagen", open("app/assets/users/test.png", "rb"))],
+        files=[("imagen", open(f"{ASSETS_DIR}/users/test.png", "rb"))],
     )
     assert response.status_code == 201
 

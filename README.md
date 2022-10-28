@@ -26,5 +26,6 @@ To initialize server, you should run:
    $> python -m venv venv
    $> source venv/bin/activate
    $> python -m pip install -r requirements.txt
-   $> uvicorn app.main:app --reload
+   $> python -m run         # run app
+   $> python -m run tests   # run tests
 ```

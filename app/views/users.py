@@ -7,7 +7,7 @@ from pony.orm import commit, db_session
 
 from app.models.user import User
 from app.schemas.user import Login, Register, Token
-from app.views import JWT_ALGORITHM, JWT_SECRET_KEY
+from app.views import JWT_ALGORITHM, JWT_SECRET_KEY, ASSETS_DIR
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
@@ -45,7 +45,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
 
         # store avatar to disk
         if avatar:
-            with open(f"app/assets/users/{schema.username}.png", "wb") as f:
+            with open(f"{ASSETS_DIR}/users/{schema.username}.png", "wb") as f:
                 f.write(avatar.file.read())
 
         user = User(
