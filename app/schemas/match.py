@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from typing import List
 
 class MatchCreateRequest(BaseModel):
     name: str
@@ -13,3 +13,23 @@ class MatchCreateRequest(BaseModel):
     # figure out how to reset the database
     # between tests
     # robot_id: int
+
+class Host(BaseModel):
+    username: str
+    avatar_url: str | None
+
+class RobotInMatch(BaseModel):
+    name: str
+    avatar_url: str | None
+    username: str
+
+class MatchResponse(BaseModel):
+    id: int
+    name: str
+    host: Host
+    max_players: int
+    min_players: int
+    games: int
+    rounds: int
+    is_private: bool | None
+    robots: List[RobotInMatch]

@@ -341,6 +341,8 @@ def test_get_created():
         (
             tokens["bruno2"],
             "partida0",
+            1,
+            {"username":"bruno2", "avatar_url":None},
             2,
             4,
             10000,
@@ -351,6 +353,8 @@ def test_get_created():
         (
             tokens["leo2"],
             "partida3",
+            4,
+            {"username":"leo2", "avatar_url":None},
             3,
             4,
             8540,
@@ -369,6 +373,8 @@ def test_get_created():
     for i, (
         token,
         name,
+        id,
+        host,
         max_p,
         min_p,
         games,
@@ -381,6 +387,8 @@ def test_get_created():
         assert response.status_code == 200
         assert response.json()[i] == {
             "name": name,
+            "id":id,
+            "host":host,
             "max_players": min_p,
             "min_players": max_p,
             "games": games,

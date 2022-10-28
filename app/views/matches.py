@@ -7,7 +7,7 @@ from pony.orm import commit, db_session, select
 from app.models.match import Match
 from app.models.robot import Robot
 from app.models.user import User
-from app.schemas.match import MatchCreateRequest
+from app.schemas.match import MatchCreateRequest, RobotInMatch, MatchResponse, Host
 from app.views import get_current_user
 
 router = APIRouter()
@@ -58,19 +58,21 @@ def get_matches(match_type: MatchType, token: str = Header()):
                 # avatar_url =  f"assets/robots/{r.id}.png" if r.has_avatar else None
 
                 robots.append(
-                    {"name": r.name, "avatar_url": None, "username": r.owner.name}
+                    RobotInMatch(name=r.name, avatar_url=None, username=r.owner.name)
                 )
 
             matches.append(
-                {
-                    "name": m.name,
-                    "max_players": m.max_players,
-                    "min_players": m.min_players,
-                    "games": m.game_count,
-                    "rounds": m.round_count,
-                    "is_private": False,
-                    "robots": robots,
-                }
+                MatchResponse(
+                    id=m.id,
+                    host=Host(username=username,avatar_url=None),
+                    name=m.name,
+                    max_players=m.max_players,
+                    min_players=m.min_players,
+                    games=m.game_count,
+                    rounds=m.round_count,
+                    is_private=False,
+                    robots=robots
+                )
             )
 
     return matches
