@@ -46,6 +46,7 @@ def test_bot_vars():
     r = RoboTest(1, (2, 3))
     r.initialize()
     r.respond()
+    r._move_and_check_crash([])
     assert r.get_direction() == 45
     assert r.get_velocity() == min(100, ACC_FACTOR)
     assert r.var == 135

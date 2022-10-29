@@ -2,9 +2,8 @@ import importlib
 import inspect
 from typing import List
 
-from app.game.robot import MAX_DMG
 import app.schemas.simulation as schemas
-from app.game import ASSETS_MODULE
+from app.game import MAX_DMG, ROBOT_MODULE
 
 
 class Board:
@@ -13,7 +12,7 @@ class Board:
         self.missiles = []
 
         for i, r_id in enumerate(robot_ids):
-            module = importlib.import_module(f".{r_id}", f"{ASSETS_MODULE}.robots")
+            module = importlib.import_module(f".{r_id}", ROBOT_MODULE)
             classes = inspect.getmembers(module, inspect.isclass)
             classes = list(filter(lambda c: c[0] != "Robot", classes))
             assert len(classes) == 1
@@ -23,7 +22,7 @@ class Board:
             r.initialize()
             self.robots.append(r)
 
-    def nextRound(self):
+    def next_round(self):
         for r in self.robots:
             # okey to do in the same loop since only scheduling movement
             # neither scan nor attack are affected by internal logic of others
@@ -38,10 +37,8 @@ class Board:
 
     def to_round_schema(self) -> schemas.Round:
         r_summary = {
-            r._id: schemas.RobotInRound(
-                x=r._pos[0],
-                y=r._pos[1],
-                dmg=r._dmg
-            ) for r in self.robots}
+            r._id: schemas.RobotInRound(x=r._pos[0], y=r._pos[1], dmg=r._dmg)
+            for r in self.robots
+        }
         m_summary = []
         return schemas.Round(robots=r_summary, missiles=m_summary)

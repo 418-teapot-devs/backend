@@ -32,6 +32,6 @@ def simulate(schema: SimulationRequest, token: str = Header()):
     b = Board(schema.robots)
     g = [b.to_round_schema()]
     for _ in range(rounds):
-        b.nextRound()
+        b.next_round()
         g.append(b.to_round_schema())
     return SimulationResponse(rounds=g)

@@ -13,11 +13,11 @@ def test_game_exec():
     b = Board(["test_loop_bot"])
     g = [b.to_round_schema()]
     for _ in range(5):
-        b.nextRound()
+        b.next_round()
         g.append(b.to_round_schema())
 
-    expected_x = [500, 500, 498, 498, 502, 502]
-    expected_y = [500, 501, 501, 498, 498, 503]
+    expected_x = [500, 500, 499, 499, 500, 500]
+    expected_y = [500, 500, 500, 499, 499, 501]
 
     expected = [
         Round(

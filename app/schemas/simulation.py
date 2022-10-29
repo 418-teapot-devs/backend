@@ -28,10 +28,11 @@ class RobotInRound(BaseModel):
     y: int
     dmg: int
 
+
 class Round(BaseModel):
     robots: Dict[Any, RobotInRound]
     missiles: List
 
+
 class SimulationResponse(BaseModel):
     rounds: List[Round]
-

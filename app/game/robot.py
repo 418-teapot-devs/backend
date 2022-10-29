@@ -2,13 +2,7 @@ import abc
 import math
 from typing import List, Tuple
 
-MAX_DMG = 100
-COUNTDOWN_INIT = 10
-DELTA_TIME = 0.1
-ROBOT_DIAMETER = 50
-COLLISION_DMG = 2
-BOARD_SZ = 1000
-ACC_FACTOR = 10
+from app.game import *
 
 
 def clamp(x, lo, hi):
@@ -28,8 +22,14 @@ class Robot(abc.ABC):
         # Robot is dead
         if self._dmg >= MAX_DMG:
             return
+        # Update velocity
+        self._current_vel = clamp(
+            self._desired_vel,
+            self._current_vel - ACC_FACTOR,
+            self._current_vel + ACC_FACTOR,
+        )
         # Update position
-        delta_pos = self._current_vel * DELTA_TIME
+        delta_pos = self._current_vel * DELTA_TIME * DELTA_VEL
         delta_x = math.cos(math.radians(self._dir)) * delta_pos
         delta_y = math.sin(math.radians(self._dir)) * delta_pos
         delta_pos = (delta_x, delta_y)
@@ -72,11 +72,6 @@ class Robot(abc.ABC):
         if self._current_vel <= 50:
             self._dir = direction % 360  # forgive for higher values
         self._desired_vel = clamp(velocity, 0, 100)  # clamp in range [0,100]
-        self._current_vel = clamp(
-            self._desired_vel,
-            self._current_vel - ACC_FACTOR,
-            self._current_vel + ACC_FACTOR,
-        )
 
     @abc.abstractmethod
     def initialize(self):
