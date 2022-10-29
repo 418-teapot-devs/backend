@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class MatchCreateRequest(BaseModel):
     name: str
-    name_robot: str
+    robot_id: int
     max_players: int
     min_players: int
     rounds: int
@@ -14,7 +14,6 @@ class MatchCreateRequest(BaseModel):
     # use this instead of name_robot once we
     # figure out how to reset the database
     # between tests
-    # robot_id: int
 
 
 class Host(BaseModel):
