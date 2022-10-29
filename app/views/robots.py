@@ -18,7 +18,11 @@ def get_robot(token: str = Header()):
         robots = []
         for robot in select(r for r in Robot if r.owner.name == username):
             avatar = f"{ASSETS_DIR}/robots/{robot.id}.png" if robot.has_avatar else None
-            robots.append(RobotResponse(robot_id=robot.id, name=robot.name, avatar=avatar, win_rate=0, mmr=0))
+            robots.append(
+                RobotResponse(
+                    robot_id=robot.id, name=robot.name, avatar=avatar, win_rate=0, mmr=0
+                )
+            )
     return robots
 
 

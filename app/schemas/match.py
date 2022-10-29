@@ -1,5 +1,7 @@
-from pydantic import BaseModel
 from typing import List
+
+from pydantic import BaseModel
+
 
 class MatchCreateRequest(BaseModel):
     name: str
@@ -14,14 +16,17 @@ class MatchCreateRequest(BaseModel):
     # between tests
     # robot_id: int
 
+
 class Host(BaseModel):
     username: str
     avatar_url: str | None
+
 
 class RobotInMatch(BaseModel):
     name: str
     avatar_url: str | None
     username: str
+
 
 class MatchResponse(BaseModel):
     id: int

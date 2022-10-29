@@ -1,8 +1,8 @@
 import os
 import sys
-import uvicorn
-import pytest
 
+import pytest
+import uvicorn
 
 test = "tests" in sys.argv
 os.environ["PYROBOTS_ASSETS"] = "tests/assets" if test else "app/assets"
