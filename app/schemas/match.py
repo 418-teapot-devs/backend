@@ -11,9 +11,6 @@ class MatchCreateRequest(BaseModel):
     rounds: int
     games: int
     password: str
-    # use this instead of name_robot once we
-    # figure out how to reset the database
-    # between tests
 
 
 class Host(BaseModel):

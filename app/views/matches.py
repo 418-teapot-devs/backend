@@ -90,7 +90,9 @@ def upload_match(form_data: MatchCreateRequest, token: str = Header()):
 
         host_robot = Robot.get(id=form_data.robot_id)
         if host_robot is None:
-            raise HTTPException(status_code=404, detail="Host robot not found")
+            raise HTTPException(status_code=404, detail="Robot not found")
+        if host_robot.owner is not host:
+            raise HTTPException(status_code=401, detail="Robot does not belong to user")
 
         Match(
             host=host,

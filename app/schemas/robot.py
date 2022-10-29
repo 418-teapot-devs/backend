@@ -1,7 +1,5 @@
-from typing import Any, Dict, List
-
 from fastapi import UploadFile
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 
 
 class RobotResponse(BaseModel):
