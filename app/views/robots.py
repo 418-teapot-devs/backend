@@ -4,7 +4,8 @@ from pony.orm import commit, db_session, select
 from app.models.robot import Robot
 from app.models.user import User
 from app.schemas.robot import RobotResponse
-from app.views import ASSETS_DIR, get_current_user
+from app.util.assets import ASSETS_DIR
+from app.util.auth import get_current_user
 
 router = APIRouter()
 

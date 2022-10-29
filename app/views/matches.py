@@ -8,7 +8,7 @@ from app.models.match import Match
 from app.models.robot import Robot
 from app.models.user import User
 from app.schemas.match import MatchCreateRequest, RobotInMatch, MatchResponse, Host
-from app.views import get_current_user
+from app.util.auth import get_current_user
 
 router = APIRouter()
 

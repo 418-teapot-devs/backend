@@ -3,9 +3,9 @@ from urllib.parse import quote_plus
 from fastapi.testclient import TestClient
 from jose import jwt
 
-from tests import ASSETS_DIR
 from app.main import app
-from app.views import JWT_ALGORITHM, JWT_SECRET_KEY
+from app.util.auth import JWT_ALGORITHM, JWT_SECRET_KEY
+from app.util.assets import ASSETS_DIR
 
 cl = TestClient(app)
 

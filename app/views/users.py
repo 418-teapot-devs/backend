@@ -1,13 +1,12 @@
-from datetime import datetime, timedelta
-
+from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from jose import jwt
 from passlib.context import CryptContext
 from pony.orm import commit, db_session
 
 from app.models.user import User
 from app.schemas.user import Login, Register, Token
-from app.views import JWT_ALGORITHM, JWT_SECRET_KEY, ASSETS_DIR
+from app.util.assets import ASSETS_DIR
+from app.util.auth import create_access_token
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
@@ -15,16 +14,6 @@ LOGIN_TOKEN_EXPIRE_DAYS = 7.0
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 router = APIRouter()
-
-
-def create_access_token(data: dict, expires_delta: timedelta):
-    to_encode = data.copy()
-
-    expire = datetime.utcnow() + expires_delta
-
-    to_encode.update({"exp": expire})
-
-    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 
 @router.post("/", response_model=Token, status_code=201)

@@ -62,7 +62,7 @@ def test_created_invalid_match():
             "algo",
             "Lobby",
             3,
-            404,
+            401,
         ),
         (
             tokens["bruno"],

@@ -13,8 +13,10 @@
 │   ├── main.py        # main entrypoint
 │   ├── models         # database entities
 │   ├── schemas        # endpoint schemes
+│   ├── util           # common utilities
 │   └── views          # endpoint routers
 └── tests
+    ├── assets
     ├── game
     ├── models
     └── views
