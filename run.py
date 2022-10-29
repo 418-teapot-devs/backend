@@ -5,6 +5,7 @@ import pytest
 import uvicorn
 
 test = "tests" in sys.argv
+os.environ["PYROBOTS_DBFILE"] = ":sharedmemory:" if test else "db.sqlite"
 os.environ["PYROBOTS_ASSETS"] = "tests/assets" if test else "app/assets"
 
 if __name__ == "__main__":

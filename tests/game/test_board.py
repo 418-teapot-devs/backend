@@ -20,11 +20,7 @@ def test_game_exec():
     expected_y = [500, 500, 500, 499, 499, 501]
 
     expected = [
-        Round(
-            robots={
-                "test_loop_bot":RobotInRound(x=x_l,y=y_l,dmg=0)
-            },
-            missiles=[]
-        )
-    for x_l, y_l in zip(expected_x, expected_y)]
+        Round(robots={"test_loop_bot": RobotInRound(x=x_l, y=y_l, dmg=0)}, missiles=[])
+        for x_l, y_l in zip(expected_x, expected_y)
+    ]
     assert g == expected

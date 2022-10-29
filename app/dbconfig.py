@@ -1,2 +1,4 @@
-db_config = {"provider": "sqlite", "filename": "db.sqlite", "create_db": True}
-db_test_config = {"provider": "sqlite", "filename": ":sharedmemory:"}
+import os
+
+db_file = os.environ["PYROBOTS_DBFILE"]
+db_config = {"provider": "sqlite", "filename": db_file, "create_db": True}
