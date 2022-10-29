@@ -1,4 +1,4 @@
-from game.robot import Robot
+from app.game.robot import Robot
 
 
 class LoopBot(Robot):
@@ -8,5 +8,5 @@ class LoopBot(Robot):
 
     def respond(self):
         self.var += 90
-        self.drive(self.var, 100)
+        self.drive(self.var, 50)
         return

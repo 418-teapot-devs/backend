@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from .robot import *
+from app.game.robot import *
 
 
 def test_invalid_bot():
@@ -46,8 +46,9 @@ def test_bot_vars():
     r = RoboTest(1, (2, 3))
     r.initialize()
     r.respond()
+    r._move_and_check_crash([])
     assert r.get_direction() == 45
-    assert r.get_velocity() == 100
+    assert r.get_velocity() == min(100, ACC_FACTOR)
     assert r.var == 135
 
 
@@ -57,8 +58,8 @@ def test_bot_move():
     r.respond()
     r._move_and_check_crash([])
     new_pos = (
-        500 + 100 * DELTA_TIME * math.cos(math.radians(45)),
-        500 + 100 * DELTA_TIME * math.sin(math.radians(45)),
+        500 + ACC_FACTOR * DELTA_TIME * math.cos(math.radians(45)),
+        500 + ACC_FACTOR * DELTA_TIME * math.sin(math.radians(45)),
     )
     assert r.get_position() == new_pos
     r._dmg = MAX_DMG

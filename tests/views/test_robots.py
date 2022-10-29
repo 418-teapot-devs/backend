@@ -3,8 +3,8 @@ from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
 
-from main import app
-from views.users import create_access_token
+from app.main import app
+from app.views.users import create_access_token
 
 cl = TestClient(app)
 
@@ -17,11 +17,11 @@ def test_create_robot():
     user = {
         "username": "annaaimeri",
         "password": "AlpacaTactica158",
-        "e_mail": "annaaimeri@gmail.com",
+        "email": "annaaimeri@gemail.com",
     }
 
     response = cl.post(f"/users/{json_to_queryparams(user)}")
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()
     token = data["token"]
@@ -56,11 +56,11 @@ def test_get_robots():
     user = {
         "username": "leotorres",
         "password": "AmoElQuartus21",
-        "e_mail": "leo@luis.tv",
+        "email": "leo@luis.tv",
     }
 
     response = cl.post(f"/users/{json_to_queryparams(user)}")
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()
     token = data["token"]
@@ -89,6 +89,6 @@ def test_get_robots():
         robot = next(filter(lambda r: r["name"] == robot_name, list(response.json())))
 
         if robot["avatar"]:
-            assert f"{robot['id']}" in robot["avatar"]
+            assert f"{robot['robot_id']}" in robot["avatar"]
         else:
             assert not robot["avatar"]

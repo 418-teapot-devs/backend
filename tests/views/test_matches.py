@@ -2,7 +2,7 @@ from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
 
-from main import app
+from app.main import app
 
 cl = TestClient(app)
 
@@ -16,20 +16,20 @@ def test_created_invalid_match():
         {
             "username": "alvaro",
             "password": "MILC(man,i love ceimaf)123",
-            "e_mail": "a@gmail.com",
+            "email": "a@gemail.com",
         },
         {
             "username": "bruno",
             "password": "h0la soy del Monse",
-            "e_mail": "b@gmail.com",
+            "email": "b@gemail.com",
         },
-        {"username": "leo", "password": "Burrito21", "e_mail": "l@gmail.com"},
+        {"username": "leo", "password": "Burrito21", "email": "l@gemail.com"},
     ]
 
     tokens = {}
     for user in users:
         response = cl.post(f"/users/{json_to_queryparams(user)}")
-        assert response.status_code == 200
+        assert response.status_code == 201
 
         data = response.json()
         tokens[user["username"]] = data["token"]
@@ -54,27 +54,23 @@ def test_created_invalid_match():
         (
             "fadsfasdfasdfasdfasdfa",
             "partida1",
-            "Marvin",
+            "3",
             2,
             4,
             10000,
             200,
             "algo",
-            "Lobby",
-            3,
-            404,
+            401,
         ),
         (
             tokens["bruno"],
             "partida1",
-            "robo nao existe",
+            "5134",
             2,
             4,
             10000,
             200,
             "algo",
-            "Lobby",
-            3,
             404,
         ),
     ]
@@ -82,29 +78,25 @@ def test_created_invalid_match():
     for (
         token,
         m_name,
-        r_name,
+        r_id,
         min_p,
         max_p,
         games,
         rounds,
         password,
-        state,
-        robot_id,
         expected_code,
     ) in test_matches:
         response = cl.post(
-            "/matches/created",
+            "/matches/",
             headers={"token": token},
             json={
                 "name": m_name,
-                "name_robot": r_name,
+                "robot_id": r_id,
                 "max_players": min_p,
                 "min_players": max_p,
                 "rounds": rounds,
                 "games": games,
                 "password": password,
-                "state": state,
-                "robotId": robot_id,
             },
         )
 
@@ -113,23 +105,23 @@ def test_created_invalid_match():
 
 def test_post_created():
     users = [
-        {"username": "bash", "password": "Reg2Loc_a", "e_mail": "a1@gmail.com"},
+        {"username": "bash", "password": "Reg2Loc_a", "email": "a1@gemail.com"},
         {
             "username": "bruno1",
             "password": "h0la soy del Monse",
-            "e_mail": "b1@gmail.com",
+            "email": "b1@gemail.com",
         },
         {
             "username": "leo1",
             "password": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            "e_mail": "l1@gmail.com",
+            "email": "l1@gemail.com",
         },
     ]
 
     tokens = {}
     for user in users:
         response = cl.post(f"/users/{json_to_queryparams(user)}")
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
 
         tokens[user["username"]] = data["token"]
@@ -154,58 +146,50 @@ def test_post_created():
         (
             tokens["bruno1"],
             "partida1",
-            "Moltres",
+            3,
             2,
             4,
             10000,
             200,
             "algo",
-            "Lobby",
-            3,
             201,
         ),
         (
             tokens["leo1"],
             "partida2",
-            "Raichu",
+            1,
             2,
             4,
             5000,
             100,
             "algo",
-            "Lobby",
-            1,
             201,
         ),
-        (tokens["leo1"], "partida3", "Zubat", 3, 4, 8540, 2, "algo", "Lobby", 2, 201),
+        (tokens["leo1"], "partida3", 2, 3, 4, 8540, 2, "algo", 201),
     ]
 
     for (
         token,
         m_name,
-        r_name,
+        robot_id,
         min_p,
         max_p,
         games,
         rounds,
         password,
-        state,
-        robot_id,
         expected_code,
     ) in test_matches:
         response = cl.post(
-            "/matches/created",
+            "/matches/",
             headers={"token": token},
             json={
                 "name": m_name,
-                "name_robot": r_name,
+                "robot_id": robot_id,
                 "max_players": max_p,
                 "min_players": min_p,
                 "rounds": rounds,
                 "games": games,
                 "password": password,
-                "state": state,
-                "robotId": robot_id,
             },
         )
 
@@ -217,20 +201,20 @@ def test_get_created():
         {
             "username": "alvaro2",
             "password": "MILC(man,i love ceimaf)123",
-            "e_mail": "a2@gmail.com",
+            "email": "a2@gemail.com",
         },
         {
             "username": "bruno2",
             "password": "h0la soy del Monse",
-            "e_mail": "b2@gmail.com",
+            "email": "b2@gemail.com",
         },
-        {"username": "leo2", "password": "Burrito21", "e_mail": "l2@gmail.com"},
+        {"username": "leo2", "password": "Burrito21", "email": "l2@gemail.com"},
     ]
 
     tokens = {}
     for user in users:
         response = cl.post(f"/users/{json_to_queryparams(user)}")
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
 
         tokens[user["username"]] = data["token"]
@@ -255,53 +239,45 @@ def test_get_created():
         (
             tokens["bruno2"],
             "partida0",
-            "Marvin",
+            3,
             2,
             4,
             10000,
             200,
             "algo",
-            "Lobby",
-            3,
             201,
         ),
         (
             tokens["bruno2"],
             "partida1",
-            "Marvin",
+            3,
             2,
             4,
             10000,
             200,
             "algo",
-            "InGame",
-            3,
             201,
         ),
         (
             tokens["leo2"],
             "partida2",
-            "daneel R olivaw",
+            1,
             2,
             4,
             5000,
             100,
             "algo",
-            "Finished",
-            1,
             201,
         ),
         (
             tokens["leo2"],
             "partida3",
-            "R giskard",
+            2,
             3,
             4,
             8540,
             2,
             "algo",
-            "Lobby",
-            2,
             201,
         ),
     ]
@@ -309,29 +285,25 @@ def test_get_created():
     for (
         token,
         m_name,
-        r_name,
+        robot_id,
         min_p,
         max_p,
         games,
         rounds,
         password,
-        state,
-        robot_id,
         expected_code,
     ) in test_matches:
         response = cl.post(
-            "/matches/created",
+            "/matches/",
             headers={"token": token},
             json={
                 "name": m_name,
-                "name_robot": r_name,
+                "robot_id": robot_id,
                 "max_players": max_p,
                 "min_players": min_p,
                 "rounds": rounds,
                 "games": games,
                 "password": password,
-                "state": state,
-                "robotId": robot_id,
             },
         )
 
@@ -341,6 +313,8 @@ def test_get_created():
         (
             tokens["bruno2"],
             "partida0",
+            1,
+            {"username": "bruno2", "avatar_url": None},
             2,
             4,
             10000,
@@ -351,6 +325,8 @@ def test_get_created():
         (
             tokens["leo2"],
             "partida3",
+            4,
+            {"username": "leo2", "avatar_url": None},
             3,
             4,
             8540,
@@ -361,7 +337,9 @@ def test_get_created():
     ]
 
     # TODO add test for when get should return []
-    response = cl.get("/matches/created", headers={"token": tokens["alvaro2"]})
+    response = cl.get(
+        "/matches/?match_type=created", headers={"token": tokens["alvaro2"]}
+    )
 
     assert response.status_code == 200
     assert not response.json()
@@ -369,6 +347,8 @@ def test_get_created():
     for i, (
         token,
         name,
+        id,
+        host,
         max_p,
         min_p,
         games,
@@ -376,11 +356,13 @@ def test_get_created():
         is_private,
         robots,
     ) in enumerate(test_get_matches):
-        response = cl.get("/matches/created", headers={"token": token})
+        response = cl.get("/matches/?match_type=created", headers={"token": token})
 
         assert response.status_code == 200
         assert response.json()[i] == {
             "name": name,
+            "id": id,
+            "host": host,
             "max_players": min_p,
             "min_players": max_p,
             "games": games,
