@@ -8,5 +8,5 @@ class LoopBot(Robot):
 
     def respond(self):
         self.var += 90
-        self.drive(self.var, 100)
+        self.drive(self.var, 50)
         return

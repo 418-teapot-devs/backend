@@ -23,5 +23,15 @@ class SimulationRequest(BaseModel):
         raise ValueError("invalid amount of robots")
 
 
-class SimulationResults(BaseModel):
-    robots: Dict[int, Dict[str, List[float]]]
+class RobotInRound(BaseModel):
+    x: int
+    y: int
+    dmg: int
+
+class Round(BaseModel):
+    robots: Dict[Any, RobotInRound]
+    missiles: List
+
+class SimulationResponse(BaseModel):
+    rounds: List[Round]
+

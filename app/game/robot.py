@@ -8,6 +8,7 @@ DELTA_TIME = 0.1
 ROBOT_DIAMETER = 50
 COLLISION_DMG = 2
 BOARD_SZ = 1000
+ACC_FACTOR = 10
 
 
 def clamp(x, lo, hi):
@@ -15,19 +16,20 @@ def clamp(x, lo, hi):
 
 
 class Robot(abc.ABC):
-    def __init__(self, id: int, init_pos: Tuple[float, float]) -> None:
+    def __init__(self, id, init_pos: Tuple[float, float]):
         self._id = id
         self._pos = init_pos
         self._dmg = 0
         self._dir = 0
-        self._vel = 0
+        self._desired_vel = 0
+        self._current_vel = 0
 
     def _move_and_check_crash(self, others: List["Robot"]):
         # Robot is dead
         if self._dmg >= MAX_DMG:
             return
         # Update position
-        delta_pos = self._vel * DELTA_TIME
+        delta_pos = self._current_vel * DELTA_TIME
         delta_x = math.cos(math.radians(self._dir)) * delta_pos
         delta_y = math.sin(math.radians(self._dir)) * delta_pos
         delta_pos = (delta_x, delta_y)
@@ -37,7 +39,7 @@ class Robot(abc.ABC):
             if math.dist(self._pos, r._pos) < ROBOT_DIAMETER:
                 r._dmg += COLLISION_DMG
                 self._dmg += COLLISION_DMG
-        # Check for  collisions against walls
+        # Check for collisions against walls
         if not (0 < self._pos[0] < BOARD_SZ and 0 < self._pos[1] < BOARD_SZ):
             self._pos = tuple(map(lambda x: clamp(x, 0, 100), self._pos))
             self._dmg += COLLISION_DMG
@@ -46,7 +48,7 @@ class Robot(abc.ABC):
         return self._dir
 
     def get_velocity(self):
-        return self._vel
+        return self._current_vel
 
     def get_position(self):
         return self._pos
@@ -67,8 +69,14 @@ class Robot(abc.ABC):
         pass
 
     def drive(self, direction: float, velocity: float):
-        self._dir = direction % 360  # forgive for higher values
-        self._vel = clamp(velocity, 0, 100)  # clamp in range [0,100]
+        if self._current_vel <= 50:
+            self._dir = direction % 360  # forgive for higher values
+        self._desired_vel = clamp(velocity, 0, 100)  # clamp in range [0,100]
+        self._current_vel = clamp(
+            self._desired_vel,
+            self._current_vel - ACC_FACTOR,
+            self._current_vel + ACC_FACTOR,
+        )
 
     @abc.abstractmethod
     def initialize(self):

@@ -1,26 +1,30 @@
 from app.game import robot
-
 from app.game.board import *
+from app.schemas.simulation import RobotInRound, Round
 
 
 def test_board_init():
-    b = initBoard([".test_id_bot"])
-    assert len(b) == 1
-    assert issubclass(type(b[0]), robot.Robot)
+    b = Board(["test_id_bot"])
+    assert len(b.robots) == 1
+    assert issubclass(type(b.robots[0]), robot.Robot)
 
 
 def test_game_exec():
-    b = initBoard([".test_id_bot", ".test_loop_bot"])
-    g = [board2dict(b)]
+    b = Board(["test_loop_bot"])
+    g = [b.to_round_schema()]
     for _ in range(5):
-        b = nextRound(b)
-        g.append(board2dict(b))
+        b.nextRound()
+        g.append(b.to_round_schema())
 
-    expected = {
-        0: {"x": [500] * 6, "y": [500] * 6},
-        1: {
-            "x": [500, 500.0, 490.0, 490.0, 500.0, 500.0],
-            "y": [500, 510.0, 510.0, 500.0, 500.0, 510.0],
-        },
-    }
-    assert game2dict(g) == expected
+    expected_x = [500, 500, 498, 498, 502, 502]
+    expected_y = [500, 501, 501, 498, 498, 503]
+
+    expected = [
+        Round(
+            robots={
+                "test_loop_bot":RobotInRound(x=x_l,y=y_l,dmg=0)
+            },
+            missiles=[]
+        )
+    for x_l, y_l in zip(expected_x, expected_y)]
+    assert g == expected
