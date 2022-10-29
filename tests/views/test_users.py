@@ -4,7 +4,8 @@ from fastapi.testclient import TestClient
 from jose import jwt
 
 from app.main import app
-from app.views import JWT_ALGORITHM, JWT_SECRET_KEY
+from app.util.assets import ASSETS_DIR
+from app.util.auth import JWT_ALGORITHM, JWT_SECRET_KEY
 
 cl = TestClient(app)
 
@@ -16,10 +17,10 @@ def json_to_queryparams(json: dict):
 def test_users_invalid_register():
     test_jsons = [
         {"username": "test", "password": "test"},
-        {"username": "test", "e_mail": "test@test.com"},
-        {"username": "test", "password": "test", "e_mail": "test"},
-        {"username": "test", "password": "test", "e_mail": "a@b.c"},
-        {"username": "test", "password": "Test1234", "e_mail": "a@bc"},
+        {"username": "test", "email": "test@test.com"},
+        {"username": "test", "password": "test", "email": "test"},
+        {"username": "test", "password": "test", "email": "a@b.c"},
+        {"username": "test", "password": "Test1234", "email": "a@bc"},
     ]
     for params in test_jsons:
         response = cl.post(f"/users/{json_to_queryparams(params)}")
@@ -28,10 +29,10 @@ def test_users_invalid_register():
 
 def test_users_register_restrictions():
     params = json_to_queryparams(
-        {"username": "test", "password": "418IAmATeapot", "e_mail": "test@test.com"}
+        {"username": "test", "password": "418IAmATeapot", "email": "test@test.com"}
     )
     response = cl.post(f"/users/{params}")
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()
     assert "token" in data.keys()
@@ -45,7 +46,7 @@ def test_users_register_restrictions():
             {
                 "username": "test",
                 "password": "pAssWord1",
-                "e_mail": "otro@distinto.com",
+                "email": "otro@distinto.com",
             },
             409,
             ["Username was taken!"],
@@ -54,13 +55,13 @@ def test_users_register_restrictions():
             {
                 "username": "otrodistinto",
                 "password": "salt27AAA!",
-                "e_mail": "test@test.com",
+                "email": "test@test.com",
             },
             409,
             ["E-Mail was taken!"],
         ),
         (
-            {"username": "test", "password": "Aa12345678", "e_mail": "test@test.com"},
+            {"username": "test", "password": "Aa12345678", "email": "test@test.com"},
             409,
             ["Username was taken!", "E-Mail was taken!"],
         ),
@@ -75,11 +76,11 @@ def test_login():
     register_form = {
         "username": "leo10",
         "password": "Burrito21",
-        "e_mail": "leo10@hotmail.com.ar",
+        "email": "leo10@hotemail.com.ar",
     }
 
     response = cl.post(f"/users/{json_to_queryparams(register_form)}")
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     response = cl.post(
         "/users/login",
@@ -116,13 +117,13 @@ def test_users_avatar():
     json = {
         "username": "conavatar",
         "password": "Secr3tIs1m0#",
-        "e_mail": "img@test.com",
+        "email": "img@test.com",
     }
     response = cl.post(
         f"/users/{json_to_queryparams(json)}",
-        files=[("imagen", open("app/assets/users/test.png", "rb"))],
+        files=[("imagen", open(f"{ASSETS_DIR}/users/test.png", "rb"))],
     )
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     data = response.json()
     assert "token" in data.keys()

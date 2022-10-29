@@ -3,10 +3,10 @@ from os.path import isfile
 from fastapi import APIRouter, Header, HTTPException
 from pony.orm import db_session
 
+from app.game.board import Board
 from app.models.robot import Robot
-from app.schemas.simulation import SimulationRequest
-from app.game.board import board2dict, game2dict, initBoard, nextRound
-from app.views import get_current_user
+from app.schemas.simulation import SimulationRequest, SimulationResponse
+from app.util.auth import get_current_user
 
 DEFAULT_ROUNDS = 100
 BOT_DIR = "app/assets/robots"
@@ -29,9 +29,9 @@ def simulate(schema: SimulationRequest, token: str = Header()):
                 )
     rounds = schema.rounds if schema.rounds is not None else DEFAULT_ROUNDS
 
-    b = initBoard(list(f".{bot}" for bot in schema.robots))
-    g = [board2dict(b)]
+    b = Board(schema.robots)
+    g = [b.to_round_schema()]
     for _ in range(rounds):
-        b = nextRound(b)
-        g.append(board2dict(b))
-    return game2dict(g)
+        b.nextRound()
+        g.append(b.to_round_schema())
+    return SimulationResponse(rounds=g)

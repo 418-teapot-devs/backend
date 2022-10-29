@@ -1,12 +1,10 @@
 import importlib
 import inspect
-from typing import Dict, List, Tuple
-from typing import List, Tuple
+from typing import List
 
 from app.game.robot import MAX_DMG
 import app.schemas.simulation as schemas
-
-
+from app.game import ASSETS_MODULE
 
 
 class Board:
@@ -14,9 +12,8 @@ class Board:
         self.robots = []
         self.missiles = []
 
-        module = importlib.import_module(file, "app.assets.robots")
         for i, r_id in enumerate(robot_ids):
-            module = importlib.import_module(f".{r_id}", "app.assets.robots")
+            module = importlib.import_module(f".{r_id}", f"{ASSETS_MODULE}.robots")
             classes = inspect.getmembers(module, inspect.isclass)
             classes = list(filter(lambda c: c[0] != "Robot", classes))
             assert len(classes) == 1
