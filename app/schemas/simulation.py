@@ -2,6 +2,8 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel, validator
 
+from app.schemas.match import RobotInMatch
+
 MAX_BOTS = 2
 MAX_ROUNDS = 1000
 
@@ -35,4 +37,5 @@ class Round(BaseModel):
 
 
 class SimulationResponse(BaseModel):
+    robots: Dict[Any, RobotInMatch]
     rounds: List[Round]
