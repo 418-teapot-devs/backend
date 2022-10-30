@@ -119,9 +119,28 @@ def test_users_avatar():
         "password": "Secr3tIs1m0#",
         "email": "img@test.com",
     }
+
     response = cl.post(
         f"/users/{json_to_queryparams(json)}",
-        files=[("imagen", open(f"{ASSETS_DIR}/users/test.png", "rb"))],
+        files={
+            "avatar": (
+                "imagen",
+                open(f"{ASSETS_DIR}/robots/code/test_id_bot.py", "rb"),
+                "text/x-python",
+            )
+        },
+    )
+    assert response.status_code == 422
+
+    response = cl.post(
+        f"/users/{json_to_queryparams(json)}",
+        files={
+            "avatar": (
+                "imagen",
+                open(f"{ASSETS_DIR}/users/test.png", "rb"),
+                "image/png",
+            )
+        },
     )
     assert response.status_code == 201
 

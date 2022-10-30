@@ -1,5 +1,3 @@
-from os.path import isfile
-
 from fastapi import APIRouter, Header, HTTPException
 from pony.orm import db_session
 
@@ -37,7 +35,10 @@ def simulate(schema: SimulationRequest, token: str = Header()):
                     status_code=403,
                     detail=f"robot requested is not owned by user {username}",
                 )
-            robots[bot] = RobotInMatch(name=r.name, avatar_url=None, username=r.owner.name)
+            r_avatar = f"assets/avatars/robots/{r.id}.png" if r.has_avatar else None
+            robots[bot] = RobotInMatch(
+                name=r.name, avatar_url=r_avatar, username=r.owner.name
+            )
 
     rounds = schema.rounds if schema.rounds is not None else DEFAULT_ROUNDS
 
