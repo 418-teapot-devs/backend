@@ -1,14 +1,16 @@
 from enum import Enum
 from typing import Dict
 
-from fastapi import APIRouter, Header, HTTPException, Response
+from fastapi import APIRouter, Header, HTTPException, Response, WebSocket
 from pony.orm import commit, db_session, select
 
 from app.models.match import Match
 from app.models.robot import Robot
 from app.models.user import User
-from app.schemas.match import Host, MatchCreateRequest, MatchResponse, RobotInMatch
+from app.schemas.match import Host, MatchCreateRequest, MatchResponse, RobotInMatch, MatchResponseS
 from app.util.auth import get_current_user
+from app.util.room import Room
+
 
 router = APIRouter()
 
@@ -107,3 +109,40 @@ def upload_match(form_data: MatchCreateRequest, token: str = Header()):
         commit()
 
     return Response(status_code=201)
+
+
+@router.get("/{match_id}")
+def get_match(match_id: int, token: str = Header()):
+    username = get_current_user(token)
+    m = Match.get(id=match_id)
+    return(MatchResponseS(
+                    id=m.id,
+                    host=Host(username=username, avatar_url=None),
+                    name=m.name,
+                    max_players=m.max_players,
+                    min_players=m.min_players,
+                    games=m.game_count,
+                    rounds=m.round_count,
+                    is_private=False,
+                    robots=robots,
+                    status=m.status
+                    ))
+
+
+rooms: Dict[int, Room] = {}
+@router.websocket("/{match_id}/ws")
+async def websocket_endpoint(websocket: WebSocket, match_id: int):
+    if room.get(match_id) is None:
+        rooms[match_id] = Room()
+
+    await rooms[match_id].connect(ws)
+
+    try:
+        while True:
+            if rooms[mathc_id].flag:
+                await rooms[match_id].broacast("hola")
+
+    except WebSocketDisconnect:
+        rooms[match_id].disconnect(ws)
+        if not rooms[match_id].clients:
+            rooms.pop(match_id)
