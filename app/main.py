@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.views.matches import router as MatchesRouter
 from app.views.robots import router as RobotRouter
@@ -27,6 +28,17 @@ app.include_router(UserRouter, prefix="/users")
 app.include_router(RobotRouter, prefix="/robots")
 app.include_router(MatchesRouter, prefix="/matches")
 app.include_router(SimulateRouter, prefix="/simulate")
+
+app.mount(
+    "/assets/avatars/users",
+    StaticFiles(directory="app/assets/users"),
+    name="useravatars",
+)
+app.mount(
+    "/assets/avatars/robots",
+    StaticFiles(directory="app/assets/robots"),
+    name="robotavatars",
+)
 
 
 @app.get("/")

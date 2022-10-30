@@ -54,17 +54,17 @@ def get_matches(match_type: MatchType, token: str = Header()):
         for m, _ in queried_matches:
             robots = []
             for r in m.plays:
-                # this will be used after merge with the refactor repository
-                # avatar_url =  f"assets/robots/{r.id}.png" if r.has_avatar else None
-
+                r_avatar = f"assets/avatars/robots/{r.id}.png" if r.has_avatar else None
                 robots.append(
-                    RobotInMatch(name=r.name, avatar_url=None, username=r.owner.name)
+                    RobotInMatch(name=r.name, avatar_url=r_avatar, username=r.owner.name)
                 )
 
+            host = m.host
+            h_avatar = f"assets/avatars/robots/{host.name}.png" if host.has_avatar else None
             matches.append(
                 MatchResponse(
                     id=m.id,
-                    host=Host(username=username, avatar_url=None),
+                    host=Host(username=username, avatar_url=h_avatar),
                     name=m.name,
                     max_players=m.max_players,
                     min_players=m.min_players,
