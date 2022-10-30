@@ -35,8 +35,8 @@ def test_invalid_simulation():
         tokens.append(data["token"])
 
     test_robots = [
-        ("cesco", open(f"{ASSETS_DIR}/robots/test_id_bot.py"), 201),
-        ("lueme", open(f"{ASSETS_DIR}/robots/test_loop_bot.py"), 201),
+        ("cesco", open(f"{ASSETS_DIR}/robots/code/test_id_bot.py"), 201),
+        ("lueme", open(f"{ASSETS_DIR}/robots/code/test_loop_bot.py"), 201),
     ]
 
     for robot_name, code, expected_code in test_robots:
@@ -91,8 +91,8 @@ def test_run_simulation():
     token = data["token"]
 
     test_robots = [
-        ("cesco", open(f"{ASSETS_DIR}/robots/test_id_bot.py"), 201),
-        ("lueme", open(f"{ASSETS_DIR}/robots/test_loop_bot.py"), 201),
+        ("cesco", open(f"{ASSETS_DIR}/robots/code/test_id_bot.py"), 201),
+        ("lueme", open(f"{ASSETS_DIR}/robots/code/test_loop_bot.py"), 201),
     ]
 
     for robot_name, code, expected_code in test_robots:

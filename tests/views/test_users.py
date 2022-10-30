@@ -125,7 +125,7 @@ def test_users_avatar():
         files={
             "avatar": (
                 "imagen",
-                open(f"{ASSETS_DIR}/robots/test_id_bot.py", "rb"),
+                open(f"{ASSETS_DIR}/robots/code/test_id_bot.py", "rb"),
                 "text/x-python",
             )
         },
