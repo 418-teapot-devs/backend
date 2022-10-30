@@ -56,11 +56,15 @@ def get_matches(match_type: MatchType, token: str = Header()):
             for r in m.plays:
                 r_avatar = f"assets/avatars/robots/{r.id}.png" if r.has_avatar else None
                 robots.append(
-                    RobotInMatch(name=r.name, avatar_url=r_avatar, username=r.owner.name)
+                    RobotInMatch(
+                        name=r.name, avatar_url=r_avatar, username=r.owner.name
+                    )
                 )
 
             host = m.host
-            h_avatar = f"assets/avatars/robots/{host.name}.png" if host.has_avatar else None
+            h_avatar = (
+                f"assets/avatars/robots/{host.name}.png" if host.has_avatar else None
+            )
             matches.append(
                 MatchResponse(
                     id=m.id,

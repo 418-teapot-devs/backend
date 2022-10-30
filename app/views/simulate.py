@@ -36,7 +36,9 @@ def simulate(schema: SimulationRequest, token: str = Header()):
                     detail=f"robot requested is not owned by user {username}",
                 )
             r_avatar = f"assets/avatars/robots/{r.id}.png" if r.has_avatar else None
-            robots[bot] = RobotInMatch(name=r.name, avatar_url=r_avatar, username=r.owner.name)
+            robots[bot] = RobotInMatch(
+                name=r.name, avatar_url=r_avatar, username=r.owner.name
+            )
 
     rounds = schema.rounds if schema.rounds is not None else DEFAULT_ROUNDS
 

@@ -4,7 +4,7 @@ from pydantic import BaseModel, validator
 
 from app.schemas.match import RobotInMatch
 
-MAX_BOTS = 2
+MAX_BOTS = 4
 MAX_ROUNDS = 1000
 
 
@@ -14,13 +14,13 @@ class SimulationRequest(BaseModel):
 
     @validator("rounds")
     def validate_rounds(cls, v):
-        if v is None or 0 < v < MAX_ROUNDS:
+        if v is None or 0 < v <= MAX_ROUNDS:
             return v
         raise ValueError("invalid amount of rounds")
 
     @validator("robots")
     def validate_robots(cls, v):
-        if 0 < len(v) < MAX_BOTS:
+        if 0 < len(v) <= MAX_BOTS:
             return v
         raise ValueError("invalid amount of robots")
 
