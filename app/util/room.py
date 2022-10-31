@@ -1,7 +1,16 @@
-from fastapi import WebSocket
-from typing import Dict
-from app.schemas.match import Host, MatchCreateRequest, MatchResponse, RobotInMatch, MatchResponseS
 import asyncio
+from typing import Any, Dict
+
+from fastapi import WebSocket
+
+from app.schemas.match import (
+    Host,
+    MatchCreateRequest,
+    MatchResponse,
+    MatchResponseS,
+    RobotInMatch,
+)
+
 
 class Room:
     def __init__(self):
@@ -15,7 +24,6 @@ class Room:
     def disconnect(self, client: WebSocket):
         self.clients.remove(client)
 
-    async def broadcast(self, m):
+    async def broadcast(self, m: Dict[str, Any]):
         for client in self.clients:
-            # await client.send_text(msg)
             await client.send_json(m)
