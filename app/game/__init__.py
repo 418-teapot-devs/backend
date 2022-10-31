@@ -8,6 +8,9 @@ DELTA_TIME = 1 / FPS
 DELTA_VEL = 1  # 1% of maximum velocity
 ACC_FACTOR = 10  # TODO: express in terms of DELTA_TIME as (m/s^2)
 
+MISSILE_VEL = 60 * DELTA_VEL
+MISSILE_D_DELTA = MISSILE_VEL * DELTA_TIME
+
 # Damage
 MAX_DMG = 100
 COLLISION_DMG = 2
