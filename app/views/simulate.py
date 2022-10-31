@@ -37,7 +37,9 @@ def simulate(schema: SimulationRequest, token: str = Header()):
                     status_code=403,
                     detail=f"robot requested is not owned by user {username}",
                 )
-            robots[bot] = RobotInMatch(name=r.name, avatar_url=None, username=r.owner.name)
+            robots[bot] = RobotInMatch(
+                name=r.name, avatar_url=None, username=r.owner.name
+            )
 
     rounds = schema.rounds if schema.rounds is not None else DEFAULT_ROUNDS
 
