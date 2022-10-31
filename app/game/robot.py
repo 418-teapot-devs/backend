@@ -8,6 +8,7 @@ from app.game import *
 def clamp(x, lo, hi):
     return min(max(lo, x), hi)
 
+
 # Based on
 # https://stackoverflow.com/questions/37600118/test-if-point-inside-angle/37601169
 def orientation(a, b, c):
@@ -15,8 +16,8 @@ def orientation(a, b, c):
     # k==0: Collinear
     # k>0 : Clockwise rotation
     # k<0 : Counterclockwise rotation
-    return (b[1] - a[1]) * (c[0] - b[0]) - \
-           (b[0] - a[0]) * (c[1] - b[0])
+    return (b[1] - a[1]) * (c[0] - b[0]) - (b[0] - a[0]) * (c[1] - b[0])
+
 
 class Robot(abc.ABC):
     def __init__(self, id, init_pos: Tuple[float, float]):
@@ -40,32 +41,35 @@ class Robot(abc.ABC):
 
         # Scanning all board
         if res >= math.pi:
-            return min((math.dist(self._pos, pos) for pos in scan_positions),
-                       default=math.inf)
+            return min(
+                (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
+            )
 
         # calculate scan_l, scan_r: points in the lines that define the scan zone
         scan_r, scan_l = (dir - res, dir + res)
         scan_r = (math.cos(scan_r), math.sin(scan_r))
         scan_l = (math.cos(scan_l), math.sin(scan_l))
-        scan_r = (self._pos[0] + scan_r[0],
-                  self._pos[1] + scan_r[1])
-        scan_l = (self._pos[0] + scan_l[0],
-                  self._pos[1] + scan_l[1])
+        scan_r = (self._pos[0] + scan_r[0], self._pos[1] + scan_r[1])
+        scan_l = (self._pos[0] + scan_l[0], self._pos[1] + scan_l[1])
 
         def in_acute(l, r, pt):
-            return orientation(self._pos, l, pt) > 0 and \
-                   orientation(self._pos, r, pt) < 0
-        if res <= 90: #scanning an acute angle
-            scan_positions = [pos
-                for pos in scan_positions
-                if in_acute(scan_l, scan_r, pos)]
-        else: # scanning an obtuse angle
-            scan_positions = [pos
-                for pos in scan_positions
-                if not in_acute(scan_r, scan_l, pos)]
+            return (
+                orientation(self._pos, l, pt) > 0 and orientation(self._pos, r, pt) < 0
+            )
 
-        return min((math.dist(self._pos, pos) for pos in scan_positions),
-                   default=math.inf)
+        if res <= math.pi / 2:  # scanning an acute angle
+            scan_positions = [
+                pos for pos in scan_positions if in_acute(scan_l, scan_r, pos)
+            ]
+        else:  # scanning an obtuse angle
+            scan_positions = [
+                pos for pos in scan_positions if not in_acute(scan_r, scan_l, pos)
+            ]
+
+        return min(
+            (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
+        )
+
 
     def _move_and_check_crash(self, others: List["Robot"]):
         # Robot is dead
@@ -82,7 +86,10 @@ class Robot(abc.ABC):
         delta_x = math.cos(self._dir) * delta_pos
         delta_y = math.sin(self._dir) * delta_pos
         delta_pos = (delta_x, delta_y)
-        self._pos = tuple(map(lambda a, b: a + b, self._pos, delta_pos))
+        self._pos = (
+            self._pos[0] + delta_pos[0],
+            self._pos[0] + delta_pos[0]
+        )
         # Check against other robots and take collision damage
         for r in others:
             if math.dist(self._pos, r._pos) < ROBOT_DIAMETER:
@@ -90,11 +97,14 @@ class Robot(abc.ABC):
                 self._dmg += COLLISION_DMG
         # Check for collisions against walls
         if not (0 < self._pos[0] < BOARD_SZ and 0 < self._pos[1] < BOARD_SZ):
-            self._pos = tuple(map(lambda x: clamp(x, 0, BOARD_SZ), self._pos))
+            self._pos = (
+                clamp(self._pos[0], 0, BOARD_SZ),
+                clamp(self._pos[0], 0, BOARD_SZ)
+            )
             self._dmg += COLLISION_DMG
 
     def get_direction(self):
-        return self._dir
+        return math.degrees(self._dir)
 
     def get_velocity(self):
         return self._current_vel
@@ -112,8 +122,10 @@ class Robot(abc.ABC):
         pass
 
     def point_scanner(self, direction, resolution_in_degrees):
-        self._scanner_params = (math.radians(direction % 360),
-                                math.radians(clamp(resolution_in_degrees, 0, 180)))
+        self._scanner_params = (
+            math.radians(direction % 360),
+            math.radians(clamp(resolution_in_degrees, 0, 180)),
+        )
 
     def scanned(self):
         return self._scanner_result

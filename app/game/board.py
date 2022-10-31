@@ -9,10 +9,14 @@ from app.game import MAX_DMG, ROBOT_MODULE
 
 DISP_FACTOR = math.tau / 3
 
+
 def generate_init_positions(n: int) -> List[Tuple[float, float]]:
-    dirs = [i * math.tau / n + random.uniform(-DISP_FACTOR / n, DISP_FACTOR / n) for i in range(n)]
+    dirs = [
+        i * math.tau / n + random.uniform(-DISP_FACTOR / n, DISP_FACTOR / n)
+        for i in range(n)
+    ]
     dirs = [(math.cos(d), math.sin(d), random.uniform(50, 475)) for d in dirs]
-    dirs = [(500 + x*d, 500 + y*d) for (x, y, d) in dirs]
+    dirs = [(500 + x * d, 500 + y * d) for (x, y, d) in dirs]
     random.shuffle(dirs)
     return dirs
 
