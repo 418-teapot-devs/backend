@@ -18,7 +18,6 @@ from app.schemas.match import (
     Host,
     MatchCreateRequest,
     MatchResponse,
-    MatchResponseS,
     RobotInMatch,
 )
 from app.util.auth import get_current_user
@@ -84,6 +83,7 @@ def get_matches(match_type: MatchType, token: str = Header()):
                     min_players=m.min_players,
                     games=m.game_count,
                     rounds=m.round_count,
+                    state=m.state,
                     is_private=False,
                     robots=robots,
                 )
@@ -135,7 +135,7 @@ def get_match(match_id: int, token: str = Header()):
                 RobotInMatch(name=r.name, avatar_url=None, username=r.owner.name)
             )
 
-        return MatchResponseS(
+        return MatchResponse(
             id=m.id,
             host=Host(username=username, avatar_url=None),
             name=m.name,

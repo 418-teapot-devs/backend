@@ -34,15 +34,3 @@ class MatchResponse(BaseModel):
     rounds: int
     is_private: bool | None
     robots: List[RobotInMatch]
-
-class MatchResponseS(BaseModel):
-    id: int
-    name: str
-    host: Host
-    max_players: int
-    min_players: int
-    games: int
-    rounds: int
-    is_private: bool | None
-    robots: List[RobotInMatch]
-    status: str

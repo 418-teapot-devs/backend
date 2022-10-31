@@ -3,14 +3,6 @@ from typing import Any, Dict
 
 from fastapi import WebSocket
 
-from app.schemas.match import (
-    Host,
-    MatchCreateRequest,
-    MatchResponse,
-    MatchResponseS,
-    RobotInMatch,
-)
-
 
 class Room:
     def __init__(self):
