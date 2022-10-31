@@ -1,14 +1,68 @@
+from datetime import timedelta
 from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.util.auth import create_access_token
 
 cl = TestClient(app)
 
 
 def json_to_queryparams(json: dict):
     return "?" + "&".join([f"{k}={quote_plus(v)}" for k, v in json.items()])
+
+
+def test_create_from_nonexistant_user():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "leo"},
+        timedelta(hours=1.0)
+    )
+
+    test_match = {
+        "name": "string",
+        "robot_id": 0,
+        "max_players": 0,
+        "min_players": 0,
+        "rounds": 0,
+        "games": 0,
+        "password": "string"
+    }
+
+    response = cl.post("/matches/", headers={"token": fake_token}, json=test_match)
+    assert response.status_code == 404
+
+
+def test_get_from_nonexistant_user():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "leo"},
+        timedelta(hours=1.0)
+    )
+
+    response = cl.get("/matches/1", headers={"token": fake_token})
+    assert response.status_code == 404
+
+
+def test_get_with_qp_from_nonexistant_user():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "leo"},
+        timedelta(hours=1.0)
+    )
+
+    response = cl.get("/matches/?match_type=created", headers={"token": fake_token})
+    assert response.status_code == 404
+
+
+def test_get_nonexistent_match():
+    user = {"username": "gino", "password": "GatoTruco123", "email": "k@gmail.com"}
+
+    response = cl.post(f"/users/{json_to_queryparams(user)}")
+    assert response.status_code == 201
+
+    token = response.json()["token"]
+
+    response = cl.get("/matches/1", headers={"token": token})
+    assert response.status_code == 404
 
 
 def test_created_invalid_match():

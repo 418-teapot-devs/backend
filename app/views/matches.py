@@ -126,8 +126,15 @@ def create_match(form_data: MatchCreateRequest, token: str = Header()):
 def get_match(match_id: int, token: str = Header()):
     username = get_current_user(token)
 
+    if username is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
     with db_session:
         m = Match.get(id=match_id)
+
+        if m is None:
+            raise HTTPException(status_code=404, detail="Match not found")
+
         robots = []
         for r in m.plays:
             robots.append(
@@ -152,7 +159,7 @@ rooms: Dict[int, Room] = {}
 
 
 @router.websocket("/{match_id}/ws")
-async def websocket_endpoint(ws: WebSocket, match_id: int):
+async def websocket_endpoint(ws: WebSocket, match_id: int): #pragma: no cover
     with db_session:
         m = Match.get(id=match_id)
 
@@ -194,8 +201,7 @@ async def websocket_endpoint(ws: WebSocket, match_id: int):
 
 
 @router.post("/{match_id}/event")
-def set_event(match_id: int):
-
+def set_event(match_id: int): #pragma: no cover
     if rooms.get(match_id) is None:
         raise HTTPException(status_code=404)
     rooms[match_id].event.set()
