@@ -1,14 +1,21 @@
-from app.game import robot
+from app.game import BOARD_SZ, robot
 from app.game.board import *
 from app.schemas.simulation import RobotInRound, Round
+from unittest import mock
 
+def test_init_positions():
+    for i in [1, 5, 10, 50]:
+        positions = generate_init_positions(i)
+        assert all(0 < x < BOARD_SZ and 0 < y < BOARD_SZ for x, y in positions)
 
+@mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 def test_board_init():
     b = Board(["test_id_bot"])
     assert len(b.robots) == 1
     assert issubclass(type(b.robots[0]), robot.Robot)
 
 
+@mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 def test_game_exec():
     b = Board(["test_loop_bot"])
     g = [b.to_round_schema()]
