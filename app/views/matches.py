@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Dict
 
-from fastapi import APIRouter, Header, HTTPException, Response, WebSocket
+from fastapi import APIRouter, Header, HTTPException, Response, WebSocket, WebSocketDisconnect
 from pony.orm import commit, db_session, select
 
 from app.models.match import Match
@@ -114,35 +114,95 @@ def upload_match(form_data: MatchCreateRequest, token: str = Header()):
 @router.get("/{match_id}")
 def get_match(match_id: int, token: str = Header()):
     username = get_current_user(token)
-    m = Match.get(id=match_id)
-    return(MatchResponseS(
-                    id=m.id,
-                    host=Host(username=username, avatar_url=None),
-                    name=m.name,
-                    max_players=m.max_players,
-                    min_players=m.min_players,
-                    games=m.game_count,
-                    rounds=m.round_count,
-                    is_private=False,
-                    robots=robots,
-                    status=m.status
-                    ))
+
+    with db_session:
+        m = Match.get(id=match_id)
+        robots = []
+        for r in m.plays:
+            robots.append(
+                RobotInMatch(name=r.name, avatar_url=None, username=r.owner.name)
+            )
+
+        return(MatchResponseS(
+                        id=m.id,
+                        host=Host(username=username, avatar_url=None),
+                        name=m.name,
+                        max_players=m.max_players,
+                        min_players=m.min_players,
+                        games=m.game_count,
+                        rounds=m.round_count,
+                        is_private=False,
+                        robots=robots,
+                        status=m.state
+                        ))
 
 
 rooms: Dict[int, Room] = {}
 @router.websocket("/{match_id}/ws")
-async def websocket_endpoint(websocket: WebSocket, match_id: int):
-    if room.get(match_id) is None:
-        rooms[match_id] = Room()
+async def websocket_endpoint(ws: WebSocket, match_id: int):
 
-    await rooms[match_id].connect(ws)
+    with db_session:
+        m = Match.get(id=match_id)
 
-    try:
-        while True:
-            if rooms[mathc_id].flag:
-                await rooms[match_id].broacast("hola")
+        robots = []
+        for r in m.plays:
+            robots.append(
+                RobotInMatch(name=r.name, avatar_url=None, username=r.owner.name)
+            )
 
-    except WebSocketDisconnect:
-        rooms[match_id].disconnect(ws)
-        if not rooms[match_id].clients:
-            rooms.pop(match_id)
+        match = {"id": m.id,
+                "host": {"username":m.host.name, "avatar_url":None},
+                "name": m.name,
+                "max_players": m.max_players,
+                "min_players": m.min_players,
+                "games": m.game_count,
+                "rounds": m.round_count,
+                "is_private": False,
+                "robots": robots,
+                "status": m.state
+        }
+
+#         match = MatchResponseS(
+#                         id=m.id,
+#                         host=Host(username=m.host.name, avatar_url=None),
+#                         name=m.name,
+#                         max_players=m.max_players,
+#                         min_players=m.min_players,
+#                         games=m.game_count,
+#                         rounds=m.round_count,
+#                         is_private=False,
+#                         robots=robots,
+#                         status=m.state
+#                         )
+
+        if rooms.get(match_id) is None:
+            rooms[match_id] = Room()
+
+        await rooms[match_id].connect(ws)
+
+        try:
+            while True:
+                await rooms[match_id].event.wait()
+                await rooms[match_id].broadcast({"state": match["status"]})
+                rooms[match_id].event.clear()
+
+        except Exception as e:
+            rooms[match_id].disconnect(ws)
+            if not rooms[match_id].clients:
+                rooms.pop(match_id)
+
+
+@router.post("/{match_id}/event")
+def set_event(match_id: int):
+
+    if rooms.get(match_id) is None:
+        raise HTTPException(status_code=404)
+    rooms[match_id].event.set()
+
+    return Response(status_code=200)
+
+
+
+
+
+
