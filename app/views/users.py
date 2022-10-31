@@ -6,7 +6,7 @@ from pony.orm import commit, db_session
 
 from app.models.user import User
 from app.schemas.user import Login, LoginResponse, Register, Token, UserProfile
-from app.util.assets import ASSETS_DIR
+from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import create_access_token
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
@@ -75,7 +75,6 @@ def login(form_data: Login):
         token_data = {"sub": "login", "username": user.name}
         token = create_access_token(token_data, timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS))
 
-    avatar_url = f"/assets/avatars/user/{user.name}.png" if user.has_avatar else None
-    profile = UserProfile(username=user.name, email=user.email, avatar_url=avatar_url)
+    profile = UserProfile(username=user.name, email=user.email, avatar_url=get_user_avatar(user))
 
     return LoginResponse(token=token, profile=profile)

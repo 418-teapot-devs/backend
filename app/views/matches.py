@@ -1,6 +1,6 @@
 import asyncio
 from enum import Enum
-from typing import Dict
+from typing import Dict, Any
 
 from fastapi import (
     APIRouter,
@@ -17,6 +17,7 @@ from app.models.user import User
 from app.schemas.match import Host, MatchCreateRequest, MatchResponse, RobotInMatch
 from app.util.auth import get_current_user
 from app.util.room import Room
+from app.util.assets import get_user_avatar, get_robot_avatar
 
 router = APIRouter()
 
@@ -29,6 +30,30 @@ class MatchType(str, Enum):
 
 
 query_base = select((m, r) for m in Match for r in m.plays)
+
+
+def match_to_dict(match: Match) -> Dict[str, Any]:
+    robots = []
+    for robot in match.plays:
+        avatar_url = get_robot_avatar(robot)
+        robots.append(
+            {"name": robot.name, "avatar_url": avatar_url, "username": robot.owner.name}
+        )
+
+    host_avatar_url = get_user_avatar(match.host)
+
+    return {
+        "id": match.id,
+        "host": {"username": match.host.name, "avatar_url": host_avatar_url},
+        "name": match.name,
+        "max_players": match.max_players,
+        "min_players": match.min_players,
+        "games": match.game_count,
+        "rounds": match.round_count,
+        "robots": robots,
+        "is_private": False,
+        "status": match.state,
+    }
 
 
 @router.get("/")
@@ -62,21 +87,18 @@ def get_matches(match_type: MatchType, token: str = Header()):
         for m, _ in queried_matches:
             robots = []
             for r in m.plays:
-                r_avatar = f"assets/avatars/robots/{r.id}.png" if r.has_avatar else None
+                r_avatar = get_robot_avatar(r)
                 robots.append(
                     RobotInMatch(
                         name=r.name, avatar_url=r_avatar, username=r.owner.name
                     )
                 )
 
-            host = m.host
-            h_avatar = (
-                f"assets/avatars/robots/{host.name}.png" if host.has_avatar else None
-            )
+            h_avatar = get_user_avatar(m.host)
             matches.append(
                 MatchResponse(
                     id=m.id,
-                    host=Host(username=username, avatar_url=h_avatar),
+                    host=Host(username=m.host.name, avatar_url=h_avatar),
                     name=m.name,
                     max_players=m.max_players,
                     min_players=m.min_players,
@@ -137,13 +159,15 @@ def get_match(match_id: int, token: str = Header()):
 
         robots = []
         for r in m.plays:
+            r_avatar_url = get_robot_avatar(r)
             robots.append(
-                RobotInMatch(name=r.name, avatar_url=None, username=r.owner.name)
+                RobotInMatch(name=r.name, avatar_url=r_avatar_url, username=r.owner.name)
             )
 
+        host_avatar_url = get_user_avatar(m.host)
         return MatchResponse(
             id=m.id,
-            host=Host(username=username, avatar_url=None),
+            host=Host(username=m.host.name, avatar_url=host_avatar_url),
             name=m.name,
             max_players=m.max_players,
             min_players=m.min_players,
@@ -166,41 +190,26 @@ def join_match(match_id: int, robot_id: int, token: str = Header()):
         raise HTTPException(status_code=404, detail="User not found")
 
     with db_session:
+        m = Match.get(id=match_id)
+
+        if m is None:
+            raise HTTPException(status_code=404, detail="Match not found")
+
+        if m.robot_count >= m.max_players:
+            raise HTTPException(status_code=403, detail="Match is full")
+
         r = Robot.get(id=robot_id)
 
         if r is None:
             raise HTTPException(status_code=404, detail="Robot not found")
 
         if r.owner.name != username:
-            raise HTTPException(status_code=401, detail="Robot does not belong to user")
-
-        m = Match.get(id=match_id)
-
-        if m is None:
-            raise HTTPException(status_code=404, detail="Match not found")
+            raise HTTPException(status_code=403, detail="Robot does not belong to user")
 
         m.plays.add(r)
         m.robot_count += 1
 
-        robots = []
-        for r in m.plays:
-            avatar_url = f"/assets/avatars/robot/{r.id}.png" if r.has_avatar else None
-            robots.append(
-                {"name": r.name, "avatar_url": avatar_url, "username": r.owner.name}
-            )
-
-        match = {
-            "id": m.id,
-            "host": {"username": m.host.name, "avatar_url": None},
-            "name": m.name,
-            "max_players": m.max_players,
-            "min_players": m.min_players,
-            "games": m.game_count,
-            "rounds": m.round_count,
-            "robots": robots,
-            "is_private": False,
-            "status": m.state,
-        }
+        match = match_to_dict(m)
 
     room = rooms.get(match_id)
     asyncio.run(room.broadcast(match))
@@ -210,43 +219,23 @@ def join_match(match_id: int, robot_id: int, token: str = Header()):
 @router.websocket("/{match_id}/ws")
 async def websocket_endpoint(ws: WebSocket, match_id: int): #pragma: no cover
     with db_session:
-        m = Match.get(id=match_id)
+        match = match_to_dict(Match.get(id=match_id))
 
-        robots = []
-        for r in m.plays:
-            avatar_url = f"/assets/avatars/robot/{r.id}.png" if r.has_avatar else None
-            robots.append(
-                {"name": r.name, "avatar_url": avatar_url, "username": r.owner.name}
-            )
+    if rooms.get(match_id) is None:
+        rooms[match_id] = Room()
 
-        match = {
-            "id": m.id,
-            "host": {"username": m.host.name, "avatar_url": None},
-            "name": m.name,
-            "max_players": m.max_players,
-            "min_players": m.min_players,
-            "games": m.game_count,
-            "rounds": m.round_count,
-            "robots": robots,
-            "is_private": False,
-            "status": m.state,
-        }
+    await rooms[match_id].connect(ws)
 
-        if rooms.get(match_id) is None:
-            rooms[match_id] = Room()
+    try:
+        while True:
+            await rooms[match_id].event.wait()
+            await rooms[match_id].broadcast(match)
+            rooms[match_id].event.clear()
 
-        await rooms[match_id].connect(ws)
-
-        try:
-            while True:
-                await rooms[match_id].event.wait()
-                await rooms[match_id].broadcast(match)
-                rooms[match_id].event.clear()
-
-        except Exception as _:
-            rooms[match_id].disconnect(ws)
-            if not rooms[match_id].clients:
-                rooms.pop(match_id)
+    except Exception as _:
+        rooms[match_id].disconnect(ws)
+        if not rooms[match_id].clients:
+            rooms.pop(match_id)
 
 
 @router.post("/{match_id}/event")
