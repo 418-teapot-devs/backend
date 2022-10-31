@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 from typing import Dict
 
@@ -7,7 +8,6 @@ from fastapi import (
     HTTPException,
     Response,
     WebSocket,
-    WebSocketDisconnect,
 )
 from pony.orm import commit, db_session, select
 
@@ -156,6 +156,55 @@ def get_match(match_id: int, token: str = Header()):
 
 
 rooms: Dict[int, Room] = {}
+
+
+@router.put("/{match_id}/join", status_code=201)
+def join_match(match_id: int, robot_id: int, token: str = Header()):
+    username = get_current_user(token)
+
+    if username is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    with db_session:
+        r = Robot.get(id=robot_id)
+
+        if r is None:
+            raise HTTPException(status_code=404, detail="Robot not found")
+
+        if r.owner.name != username:
+            raise HTTPException(status_code=401, detail="Robot does not belong to user")
+
+        m = Match.get(id=match_id)
+
+        if m is None:
+            raise HTTPException(status_code=404, detail="Match not found")
+
+        m.plays.add(r)
+        m.robot_count += 1
+
+        robots = []
+        for r in m.plays:
+            avatar_url = f"/assets/avatars/robot/{r.id}.png" if r.has_avatar else None
+            robots.append(
+                {"name": r.name, "avatar_url": avatar_url, "username": r.owner.name}
+            )
+
+        match = {
+            "id": m.id,
+            "host": {"username": m.host.name, "avatar_url": None},
+            "name": m.name,
+            "max_players": m.max_players,
+            "min_players": m.min_players,
+            "games": m.game_count,
+            "rounds": m.round_count,
+            "robots": robots,
+            "is_private": False,
+            "status": m.state,
+        }
+
+    room = rooms.get(match_id)
+    asyncio.run(room.broadcast(match))
+    room.event.clear()
 
 
 @router.websocket("/{match_id}/ws")
