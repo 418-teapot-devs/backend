@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from pony.orm import commit, db_session
 
 from app.models.user import User
-from app.schemas.user import Login, Register, Token
+from app.schemas.user import Login, LoginResponse, Register, Token, UserProfile
 from app.util.assets import ASSETS_DIR
 from app.util.auth import create_access_token
 
@@ -61,7 +61,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         return Token(token=login_token)
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=LoginResponse)
 def login(form_data: Login):
     with db_session:
         user = User.get(name=form_data.username)
@@ -75,4 +75,7 @@ def login(form_data: Login):
         token_data = {"sub": "login", "username": user.name}
         token = create_access_token(token_data, timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS))
 
-        return Token(token=token)
+    avatar_url = f"/assets/avatars/user/{user.name}.png" if user.has_avatar else None
+    profile = UserProfile(username=user.name, email=user.email, avatar_url=avatar_url)
+
+    return LoginResponse(token=token, profile=profile)

@@ -22,7 +22,11 @@ def get_robot(token: str = Header()):
             )
             robots.append(
                 RobotResponse(
-                    robot_id=robot.id, name=robot.name, avatar=avatar, win_rate=0, mmr=0
+                    robot_id=robot.id,
+                    name=robot.name,
+                    avatar_url=avatar,
+                    win_rate=0,
+                    mmr=0,
                 )
             )
     return robots
