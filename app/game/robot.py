@@ -30,10 +30,7 @@ class Missile:
             delta_pos = min(self._dist, MISSILE_D_DELTA)
             self._dist -= delta_pos
             delta_pos = (self._dir[0] * delta_pos, self._dir[1] * delta_pos)
-            self._pos = (
-                self._pos[0] + delta_pos[0],
-                self._pos[1] + delta_pos[1]
-            )
+            self._pos = (self._pos[0] + delta_pos[0], self._pos[1] + delta_pos[1])
 
     def _explode(self, robots: List["Robot"]):
         if self._dist <= 0:
@@ -72,8 +69,7 @@ class Robot(abc.ABC):
         # Scanning all board
         if res >= math.pi:
             return min(
-                (math.dist(self._pos, pos) for pos in scan_positions),
-                default=math.inf
+                (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
             )
 
         # calculate scan_l, scan_r: points in the lines that define the scan zone
@@ -124,10 +120,7 @@ class Robot(abc.ABC):
         delta_x = math.cos(self._dir) * delta_pos
         delta_y = math.sin(self._dir) * delta_pos
         delta_pos = (delta_x, delta_y)
-        self._pos = (
-            self._pos[0] + delta_pos[0],
-            self._pos[0] + delta_pos[0]
-        )
+        self._pos = (self._pos[0] + delta_pos[0], self._pos[0] + delta_pos[0])
         # Check against other robots and take collision damage
         for r in others:
             if math.dist(self._pos, r._pos) < ROBOT_DIAMETER:
@@ -137,7 +130,7 @@ class Robot(abc.ABC):
         if not (0 < self._pos[0] < BOARD_SZ and 0 < self._pos[1] < BOARD_SZ):
             self._pos = (
                 clamp(self._pos[0], 0, BOARD_SZ),
-                clamp(self._pos[0], 0, BOARD_SZ)
+                clamp(self._pos[0], 0, BOARD_SZ),
             )
             self._dmg += COLLISION_DMG
 
