@@ -68,7 +68,7 @@ class Robot(abc.ABC):
 
         # Scanning all board
         if res >= math.pi:
-            return min(
+            self._scanner_result = min(
                 (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
             )
 
@@ -93,7 +93,7 @@ class Robot(abc.ABC):
                 pos for pos in scan_positions if not in_acute(scan_r, scan_l, pos)
             ]
 
-        return min(
+        self._scanner_result = min(
             (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
         )
 
@@ -102,7 +102,7 @@ class Robot(abc.ABC):
             dir, dist = self._cannon_params
             missiles.append(Missile(self._pos, dir, dist))
             self._cannon_cooldown = CANNON_COOLDOWN
-        self._cannon_cooldown -= 0
+        self._cannon_cooldown -= 1
         self._shooting = False
 
     def _move_and_check_crash(self, others: List["Robot"]):
