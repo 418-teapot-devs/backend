@@ -1,6 +1,6 @@
 from unittest import mock
 
-from app.game import BOARD_SZ, robot
+from app.game import BOARD_SZ, entities
 from app.game.board import *
 from app.schemas.simulation import RobotInRound, Round
 
@@ -15,7 +15,7 @@ def test_init_positions():
 def test_board_init():
     b = Board(["test_id_bot"])
     assert len(b.robots) == 1
-    assert issubclass(type(b.robots[0]), robot.Robot)
+    assert issubclass(type(b.robots[0]), entities.Robot)
 
 
 @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)

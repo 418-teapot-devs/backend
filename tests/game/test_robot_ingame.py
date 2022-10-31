@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from app.game.robot import *
+from app.game.entities import *
 
 
 def test_invalid_bot():
