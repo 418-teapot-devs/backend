@@ -14,7 +14,13 @@ from pony.orm import commit, db_session, select
 from app.models.match import Match
 from app.models.robot import Robot
 from app.models.user import User
-from app.schemas.match import Host, MatchCreateRequest, MatchResponse, RobotInMatch
+from app.schemas.match import (
+    Host,
+    MatchCreateRequest,
+    MatchJoinRequest,
+    MatchResponse,
+    RobotInMatch,
+)
 from app.util.auth import get_current_user
 from app.util.room import Room
 from app.util.assets import get_user_avatar, get_robot_avatar
@@ -138,6 +144,7 @@ def create_match(form_data: MatchCreateRequest, token: str = Header()):
             game_count=form_data.games,
             round_count=form_data.rounds,
             state="Lobby",
+            password=form_data.password,
         )
         commit()
 
@@ -183,7 +190,7 @@ rooms: Dict[int, Room] = {}
 
 
 @router.put("/{match_id}/join", status_code=201)
-def join_match(match_id: int, robot_id: int, token: str = Header()):
+def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
     username = get_current_user(token)
 
     if username is None:
@@ -195,7 +202,10 @@ def join_match(match_id: int, robot_id: int, token: str = Header()):
         if m is None:
             raise HTTPException(status_code=404, detail="Match not found")
 
-        r = Robot.get(id=robot_id)
+        if m.state != "Lobby":
+            raise HTTPException(status_code=403, detail="Match has already started")
+
+        r = Robot.get(id=form.robot_id)
 
         if r is None:
             raise HTTPException(status_code=404, detail="Robot not found")
@@ -204,20 +214,24 @@ def join_match(match_id: int, robot_id: int, token: str = Header()):
             raise HTTPException(status_code=403, detail="Robot does not belong to user")
 
         robot_from_owner = m.plays.select(lambda robot: r.owner.name == robot.owner.name)
-        if m.robot_count >= m.max_players and not robot_from_owner:
+        if m.plays.count() >= m.max_players and not robot_from_owner:
             raise HTTPException(status_code=403, detail="Match is full")
+
+        if m.password and form.password != m.password:
+            raise HTTPException(status_code=403, detail="Match password is incorrect")
 
         if robot_from_owner:
             m.plays.remove(robot_from_owner)
 
         m.plays.add(r)
-        m.robot_count += 1
 
         match = match_to_dict(m)
 
     room = rooms.get(match_id)
-    asyncio.run(room.broadcast(match))
-    room.event.clear()
+
+    if room:
+        asyncio.run(room.broadcast(match))
+        room.event.clear()
 
 
 @router.websocket("/{match_id}/ws")

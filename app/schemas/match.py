@@ -13,6 +13,11 @@ class MatchCreateRequest(BaseModel):
     password: str
 
 
+class MatchJoinRequest(BaseModel):
+    robot_id: int
+    password: str | None
+
+
 class Host(BaseModel):
     username: str
     avatar_url: str | None

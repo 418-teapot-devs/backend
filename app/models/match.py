@@ -1,4 +1,4 @@
-from pony.orm import PrimaryKey, Required, Set
+from pony.orm import PrimaryKey, Required, Optional, Set
 
 from app.models.database import db
 
@@ -14,3 +14,4 @@ class Match(db.Entity):
     round_count = Required(int, default=10000)
     plays = Set("Robot", reverse="matches_in")
     state = Required(str, 8, default="Lobby")
+    password = Optional(str)
