@@ -24,7 +24,7 @@ def test_game_exec():
         g.append(b.to_round_schema())
 
     expected_x = [500, 500, 499, 499, 500, 500]
-    expected_y = [500, 500, 500, 499, 499, 501]
+    expected_y = [500, 500, 499, 499, 500, 500]
 
     expected = [
         Round(robots={"test_loop_bot": RobotInRound(x=x_l, y=y_l, dmg=0)}, missiles=[])
