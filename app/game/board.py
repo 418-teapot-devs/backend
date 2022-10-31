@@ -7,10 +7,11 @@ from typing import List, Tuple
 import app.schemas.simulation as schemas
 from app.game import MAX_DMG, ROBOT_MODULE
 
+DISP_FACTOR = math.tau / 3
 
 def generate_init_positions(n: int) -> List[Tuple[float, float]]:
-    dirs = [i * 360 / n + random.uniform(-120 / n, 120 / n) for i in range(n)]
-    dirs = [(math.cos(math.radians(d)), math.sin(math.radians(d)), random.uniform(50, 450)) for d in dirs]
+    dirs = [i * math.tau / n + random.uniform(-DISP_FACTOR / n, DISP_FACTOR / n) for i in range(n)]
+    dirs = [(math.cos(d), math.sin(d), random.uniform(50, 475)) for d in dirs]
     dirs = [(500 + x*d, 500 + y*d) for (x, y, d) in dirs]
     random.shuffle(dirs)
     return dirs
@@ -35,10 +36,10 @@ class Board:
 
     def next_round(self):
         for r in self.robots:
-            # okey to do in the same loop since only scheduling movement
-            # neither scan nor attack are affected by internal logic of others
+            # respond only schedules movement
+            # neither scan nor attack depend on internal logic of others
             r.respond()
-            # r._scan()
+            r._scan(other._pos for other in self.robots if other is not r)
             # r._attack()
         for i in range(len(self.robots)):
             # Only check for collisions against `_move`d robots
