@@ -19,6 +19,22 @@ def test_board_init():
 
 
 @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
+def test_game_missiles():
+    b = Board(["test_id_bot"])
+    b.missiles.append(entities.Missile((2000, 2000), 2, 60))
+    b.next_round()
+    assert len(b.missiles) == 0
+    b.missiles.append(
+        entities.Missile((500 - MISSILE_D_DELTA, 500), 0, MISSILE_D_DELTA)
+    )
+    b.next_round()
+    assert len(b.missiles) == 1
+    assert b.missiles[0]._pos == (500, 500)
+    assert b.missiles[0]._dist == 0
+    assert b.robots[0].get_damage() == NEAR_EXPLOSION_DMG
+
+
+@mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 def test_game_exec():
     b = Board(["test_loop_bot"])
     g = [b.to_round_schema()]
