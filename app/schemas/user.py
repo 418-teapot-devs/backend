@@ -35,3 +35,14 @@ class Login(BaseModel):
 
 class Token(BaseModel):
     token: str
+
+
+class UserProfile(BaseModel):
+    username: str
+    email: str
+    avatar_url: str | None
+
+
+class LoginResponse(BaseModel):
+    token: str
+    profile: UserProfile

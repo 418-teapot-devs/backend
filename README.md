@@ -6,7 +6,7 @@
 ├── app
 │   ├── assets
 │   │   ├── robots
-│   │   │  ├── avatar  # {robot_id}.{png|jpg|jpeg}
+│   │   │  ├── avatars # {robot_id}.{png|jpg|jpeg}
 │   │   │  └── code    # {robot_id}.py
 │   │   └── users      # {username}.{png|jpg|jpeg}
 │   ├── game           # core game logic
