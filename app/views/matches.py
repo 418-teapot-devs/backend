@@ -195,9 +195,6 @@ def join_match(match_id: int, robot_id: int, token: str = Header()):
         if m is None:
             raise HTTPException(status_code=404, detail="Match not found")
 
-        if m.robot_count >= m.max_players:
-            raise HTTPException(status_code=403, detail="Match is full")
-
         r = Robot.get(id=robot_id)
 
         if r is None:
@@ -205,6 +202,13 @@ def join_match(match_id: int, robot_id: int, token: str = Header()):
 
         if r.owner.name != username:
             raise HTTPException(status_code=403, detail="Robot does not belong to user")
+
+        robot_from_owner = m.plays.select(lambda robot: r.owner.name == robot.owner.name)
+        if m.robot_count >= m.max_players and not robot_from_owner:
+            raise HTTPException(status_code=403, detail="Match is full")
+
+        if robot_from_owner:
+            m.plays.remove(robot_from_owner)
 
         m.plays.add(r)
         m.robot_count += 1
