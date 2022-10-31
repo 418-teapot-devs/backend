@@ -5,7 +5,7 @@ import random
 from typing import List, Tuple
 
 import app.schemas.simulation as schemas
-from app.game import MAX_DMG, ROBOT_MODULE
+from app.game import *
 
 DISP_FACTOR = math.tau / 3
 
@@ -44,17 +44,32 @@ class Board:
             # neither scan nor attack depend on internal logic of others
             r.respond()
             r._scan(other._pos for other in self.robots if other is not r)
-            # r._attack()
+            r._launch_missile(self.missiles)
+
+        self.missiles = [m for m in self.missiles if m._dist > 0]
+        for m in self.missiles:
+            m._advance()
+        self.missiles = [
+            m
+            for m in self.missiles
+            if 0 < m._pos[0] < BOARD_SZ and 0 < m._pos[1] < BOARD_SZ
+        ]
+        for m in self.missiles:
+            m._explode(self.robots)
+
         for i in range(len(self.robots)):
             # Only check for collisions against `_move`d robots
             self.robots[i]._move_and_check_crash(self.robots[:i])
         # Clean up dead robots
-        self.robots = list(filter(lambda r: r._dmg < MAX_DMG, self.robots))
+        self.robots = [r for r in self.robots if r._dmg < MAX_DMG]
 
     def to_round_schema(self) -> schemas.Round:
         r_summary = {
             r._id: schemas.RobotInRound(x=r._pos[0], y=r._pos[1], dmg=r._dmg)
             for r in self.robots
         }
-        m_summary = []
+        m_summary = [
+            schemas.MissileInRound(x=m._pos[0], y=m._pos[1], exploding=m._dist <= 0)
+            for m in self.missiles
+        ]
         return schemas.Round(robots=r_summary, missiles=m_summary)

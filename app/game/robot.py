@@ -19,6 +19,34 @@ def orientation(a, b, c):
     return (b[1] - a[1]) * (c[0] - b[0]) - (b[0] - a[0]) * (c[1] - b[0])
 
 
+class Missile:
+    def __init__(self, src: Tuple[float, float], dir: float, dist: float):
+        self._pos = src
+        self._dir = (math.cos(dir), math.sin(dir))
+        self._dist = dist
+
+    def _advance(self):
+        if self._dist > 0:
+            delta_pos = min(self._dist, MISSILE_D_DELTA)
+            self._dist -= delta_pos
+            delta_pos = (self._dir[0] * delta_pos, self._dir[1] * delta_pos)
+            self._pos = (
+                self._pos[0] + delta_pos[0],
+                self._pos[1] + delta_pos[1]
+            )
+
+    def _explode(self, robots: List["Robot"]):
+        if self._dist <= 0:
+            for r in robots:
+                d = math.dist(self._pos, r._pos)
+                if d < 5:
+                    r._dmg += NEAR_EXPLOSION_DMG
+                elif d < 20:
+                    r._dmg += MID_EXPLOSION_DMG
+                elif d < 40:
+                    r._dmg += FAR_EXPLOSION_DMG
+
+
 class Robot(abc.ABC):
     def __init__(self, id, init_pos: Tuple[float, float]):
         self._id = id
@@ -31,6 +59,8 @@ class Robot(abc.ABC):
         self._scanner_params = None
         self._scanner_result = math.inf
 
+        self._cannon_params = None
+        self._cannon_cooldown = 0
 
     def _scan(self, scan_positions: List[Tuple[float, float]]):
         if self._scanner_params is None:
@@ -42,7 +72,8 @@ class Robot(abc.ABC):
         # Scanning all board
         if res >= math.pi:
             return min(
-                (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
+                (math.dist(self._pos, pos) for pos in scan_positions),
+                default=math.inf
             )
 
         # calculate scan_l, scan_r: points in the lines that define the scan zone
@@ -70,6 +101,13 @@ class Robot(abc.ABC):
             (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
         )
 
+    def _launch_missile(self, missiles: List[Missile]):
+        if self._cannon_cooldown == 0 and self._cannon_params is not None:
+            dir, dist = self._cannon_params
+            missiles.append(Missile(self._pos, dir, dist))
+            self._cannon_cooldown = CANNON_COOLDOWN
+        self._cannon_cooldown -= 0
+        self._shooting = False
 
     def _move_and_check_crash(self, others: List["Robot"]):
         # Robot is dead
@@ -116,10 +154,10 @@ class Robot(abc.ABC):
         return self._dmg
 
     def is_cannon_ready(self):
-        pass
+        return self._cannon_cooldown == 0
 
     def cannon(self, degree, distance):
-        pass
+        self._cannon_params = (math.radians(degree % 360), distance)
 
     def point_scanner(self, direction, resolution_in_degrees):
         self._scanner_params = (
