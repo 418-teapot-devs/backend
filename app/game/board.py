@@ -1,9 +1,19 @@
 import importlib
 import inspect
-from typing import List
+import math
+import random
+from typing import List, Tuple
 
 import app.schemas.simulation as schemas
 from app.game import MAX_DMG, ROBOT_MODULE
+
+
+def generate_init_positions(n: int) -> List[Tuple[float, float]]:
+    dirs = [i * 360 / n + random.uniform(-120 / n, 120 / n) for i in range(n)]
+    dirs = [(math.cos(math.radians(d)), math.sin(math.radians(d)), random.uniform(50, 450)) for d in dirs]
+    dirs = [(500 + x*d, 500 + y*d) for (x, y, d) in dirs]
+    random.shuffle(dirs)
+    return dirs
 
 
 class Board:
@@ -11,6 +21,7 @@ class Board:
         self.robots = []
         self.missiles = []
 
+        init_pos = generate_init_positions(len(robot_ids))
         for i, r_id in enumerate(robot_ids):
             module = importlib.import_module(f".{r_id}", ROBOT_MODULE)
             classes = inspect.getmembers(module, inspect.isclass)
@@ -18,7 +29,7 @@ class Board:
             assert len(classes) == 1
             robotName = classes[0][0]
             # getattr returns a class, which we immediately initialize
-            r = getattr(module, robotName)(r_id, (500, 500))
+            r = getattr(module, robotName)(r_id, init_pos[i])
             r.initialize()
             self.robots.append(r)
 
