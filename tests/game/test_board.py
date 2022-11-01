@@ -1,14 +1,40 @@
-from app.game import robot
+from unittest import mock
+
+from app.game import BOARD_SZ, entities
 from app.game.board import *
 from app.schemas.simulation import RobotInRound, Round
 
 
+def test_init_positions():
+    for i in [1, 5, 10, 50]:
+        positions = generate_init_positions(i)
+        assert all(0 < x < BOARD_SZ and 0 < y < BOARD_SZ for x, y in positions)
+
+
+@mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 def test_board_init():
     b = Board(["test_id_bot"])
     assert len(b.robots) == 1
-    assert issubclass(type(b.robots[0]), robot.Robot)
+    assert issubclass(type(b.robots[0]), entities.Robot)
 
 
+@mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
+def test_game_missiles():
+    b = Board(["test_id_bot"])
+    b.missiles.append(entities.Missile((2000, 2000), 2, 60))
+    b.next_round()
+    assert len(b.missiles) == 0
+    b.missiles.append(
+        entities.Missile((500 - MISSILE_D_DELTA, 500), 0, MISSILE_D_DELTA)
+    )
+    b.next_round()
+    assert len(b.missiles) == 1
+    assert b.missiles[0]._pos == (500, 500)
+    assert b.missiles[0]._dist == 0
+    assert b.robots[0].get_damage() == NEAR_EXPLOSION_DMG
+
+
+@mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 def test_game_exec():
     b = Board(["test_loop_bot"])
     g = [b.to_round_schema()]
@@ -17,7 +43,7 @@ def test_game_exec():
         g.append(b.to_round_schema())
 
     expected_x = [500, 500, 499, 499, 500, 500]
-    expected_y = [500, 500, 500, 499, 499, 501]
+    expected_y = [500, 500, 499, 499, 500, 500]
 
     expected = [
         Round(robots={"test_loop_bot": RobotInRound(x=x_l, y=y_l, dmg=0)}, missiles=[])

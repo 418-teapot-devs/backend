@@ -1,4 +1,4 @@
-from app.game.robot import Robot
+from app.game.entities import Robot
 
 
 class IdBot(Robot):

@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from app.game.robot import *
+from app.game.entities import *
 
 
 def test_invalid_bot():
@@ -93,3 +93,55 @@ def test_bot_wall():
     r1.respond()
     r1._move_and_check_crash([])
     assert r1.get_damage() == COLLISION_DMG
+
+
+def test_bot_scan():
+    r = NoMove(1, (500, 500))
+    positions = [
+        (500, 750),
+        (700, 500),
+        (100, 500),
+        (500, 400),
+    ]
+    others = [NoMove(i, pos) for i, pos in enumerate(positions)]
+
+    r._scan([r._pos for r in others])
+    assert r.scanned() == math.inf
+
+    test_cases = [(45, 5, math.inf), (90, 10, 250), (90, 100, 200), (-45, 300, 100)]
+    for dir, resolution, expected in test_cases:
+        r.point_scanner(dir, resolution)
+        r._scan([r._pos for r in others])
+        assert r.scanned() == expected
+
+
+def test_bot_cannon():
+    r = NoMove(1, (404, 502))
+    m = []
+    assert r.is_cannon_ready() == True
+    r.cannon(60, 300)
+    r._launch_missile(m)
+    assert r.is_cannon_ready() == False
+    assert r._cannon_cooldown == CANNON_COOLDOWN - 1
+    assert len(m) == 1
+    m = m[0]
+    assert m._pos == (404, 502)
+    assert m._dist == 300
+    assert m._dir == (math.cos(math.radians(60)), math.sin(math.radians(60)))
+
+
+def test_missile_advance():
+    m = Missile((500, 500), math.radians(90), 1000)
+    m._advance()
+    assert m._pos == (500, 500 + MISSILE_D_DELTA)
+    assert m._dir == (math.cos(math.radians(90)), 1)
+    assert m._dist == 1000 - MISSILE_D_DELTA
+
+
+def test_missile_explode():
+    dists = [500, 510, 530, 550]
+    dmgs = [NEAR_EXPLOSION_DMG, MID_EXPLOSION_DMG, FAR_EXPLOSION_DMG, 0]
+    m = Missile((500, 500), 0, 0)
+    robots: List[Robot] = [NoMove(i, (500, i)) for i in dists]
+    m._explode(robots)
+    assert all(r._dmg == d for r, d in zip(robots, dmgs))
