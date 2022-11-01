@@ -226,6 +226,39 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
         room.event.clear()
 
 
+@router.put("/{match_id}/leave/", status_code=201)
+def leave_match(match_id: int, token: str = Header()):
+    username = get_current_user(token)
+
+    with db_session:
+        m = Match.get(id=match_id)
+
+        if m is None:
+            raise HTTPException(status_code=404, detail="Match not found")
+
+        if m.host.name == username:
+            raise HTTPException(status_code=403, detail="Host cannot leave own match")
+
+        if m.state != "Lobby":
+            raise HTTPException(status_code=403, detail="Match has already started")
+
+        robot_from_owner = m.plays.select(
+            lambda robot: robot.owner.name == username
+        )
+
+        if not robot_from_owner:
+            raise HTTPException(status_code=403, detail="User was not in match")
+
+        m.plays.remove(robot_from_owner)
+        match = match_to_dict(m)
+
+    room = rooms.get(match_id)
+
+    if room:
+        asyncio.run(room.broadcast(match))
+        room.event.clear()
+
+
 @router.websocket("/{match_id}/ws")
 async def websocket_endpoint(ws: WebSocket, match_id: int):  # pragma: no cover
     with db_session:
