@@ -654,3 +654,67 @@ def test_join_matches_replacing_robot():
     assert str(data["id"]) == match["id"]
     assert all(robots[1]["name"] != robot["name"] for robot in data["robots"])
     assert any(new_robot["name"] == robot["name"] for robot in data["robots"])
+
+
+def test_leave_nonexistant_match():
+    user = register_random_users(1)[0]
+
+    tok_header = {"token": user["token"]}
+
+    response = cl.put("/matches/1/leave/", headers=tok_header)
+    assert response.status_code == 404
+
+    data = response.json()
+    assert data["detail"] == "Match not found"
+
+
+def test_leave_not_joined_match():
+    users = register_random_users(2)
+    match = create_random_matches(users[0]["token"], 1)[0]
+
+    tok_header = {"token": users[1]["token"]}
+
+    response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
+    assert response.status_code == 403
+
+    data = response.json()
+    assert data["detail"] == "User was not in match"
+
+
+def test_leave_match_from_host():
+    user = register_random_users(1)[0]
+    match = create_random_matches(user["token"], 1)[0]
+
+    tok_header = {"token": user["token"]}
+
+    response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
+    assert response.status_code == 403
+
+    data = response.json()
+    assert data["detail"] == "Host cannot leave own match"
+
+
+def test_leave_started_match():
+    users = register_random_users(2)
+    match = create_random_matches(users[0]["token"], 1)[0]
+
+    robot = create_random_robots(users[1]["token"], 1)[0]
+
+    tok_header = {"token": users[1]["token"]}
+    json_form = {"robot_id": robot["id"], "password": match["password"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 201
+
+    with db_session:
+        m = Match[match["id"]]
+        m.state = "Started"
+        commit()
+
+    response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
+    assert response.status_code == 403
+
+    data = response.json()
+    assert data["detail"] == "Match has already started"
