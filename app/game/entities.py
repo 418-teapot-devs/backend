@@ -12,7 +12,7 @@ def clamp(x, lo, hi):
 # Based on
 # https://stackoverflow.com/questions/37600118/test-if-point-inside-angle/37601169
 def orientation(a, b, c):
-    # consider the angle por formed by the points a, b and c
+    # consider the rotation defined by the points a, b and c
     # k==0: Collinear
     # k>0 : Clockwise rotation
     # k<0 : Counterclockwise rotation
@@ -21,6 +21,7 @@ def orientation(a, b, c):
 
 class Missile:
     def __init__(self, src: Tuple[float, float], dir: float, dist: float):
+        self._id = None
         self._pos = src
         self._dir = (math.cos(dir), math.sin(dir))
         self._dist = dist
@@ -97,13 +98,15 @@ class Robot(abc.ABC):
             (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
         )
 
-    def _launch_missile(self, missiles: List[Missile]):
-        if self._cannon_cooldown == 0 and self._cannon_params is not None:
-            dir, dist = self._cannon_params
-            missiles.append(Missile(self._pos, dir, dist))
-            self._cannon_cooldown = CANNON_COOLDOWN
+    def _launch_missile(self) -> Missile | None:
         self._cannon_cooldown -= 1
-        self._shooting = False
+        if self._cannon_cooldown > 0 or self._cannon_params is None:
+            self._cannon_params = None
+            return None
+        self._cannon_cooldown = CANNON_COOLDOWN
+        dir, dist = self._cannon_params
+        self._cannon_params = None
+        return Missile(self._pos, dir, dist)
 
     def _move_and_check_crash(self, others: List["Robot"]):
         # Robot is dead
