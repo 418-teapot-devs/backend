@@ -589,14 +589,11 @@ def test_join_matches_empty_password():
 
 def test_join_match():
     users = register_random_users(2)
-
-    robots = []
-    for user in users:
-        robots.append(create_random_robots(user["token"], 1)[0])
-
     match = create_random_matches(users[0]["token"], 1)[0]
 
-    json_form = {"robot_id": robots[1]["id"], "password": match["password"]}
+    robot = create_random_robots(users[1]["token"], 1)[0]
+
+    json_form = {"robot_id": robot["id"], "password": match["password"]}
     tok_header = {"token": users[1]["token"]}
 
     response = cl.put(
@@ -609,19 +606,16 @@ def test_join_match():
 
     data = response.json()
     assert str(data["id"]) == match["id"]
-    assert any(robots[1]["name"] == robot["name"] for robot in data["robots"])
+    assert any(robot["name"] == robot_in_match["name"] for robot_in_match in data["robots"])
 
 
 def test_join_matches_replacing_robot():
     users = register_random_users(2)
-
-    robots = []
-    for user in users:
-        robots.append(create_random_robots(user["token"], 1)[0])
-
     match = create_random_matches(users[0]["token"], 1)[0]
 
-    json_form = {"robot_id": robots[1]["id"], "password": match["password"]}
+    robot = create_random_robots(users[1]["token"], 1)[0]
+
+    json_form = {"robot_id": robot["id"], "password": match["password"]}
     tok_header = {"token": users[1]["token"]}
 
     response = cl.put(
@@ -634,7 +628,7 @@ def test_join_matches_replacing_robot():
 
     data = response.json()
     assert str(data["id"]) == match["id"]
-    assert any(robots[1]["name"] == robot["name"] for robot in data["robots"])
+    assert any(robot["name"] == robot_in_match["name"] for robot_in_match in data["robots"])
 
     # joining with a new robot must replace the old one
     new_robot = create_random_robots(users[1]["token"], 1)[0]
@@ -652,7 +646,7 @@ def test_join_matches_replacing_robot():
 
     data = response.json()
     assert str(data["id"]) == match["id"]
-    assert all(robots[1]["name"] != robot["name"] for robot in data["robots"])
+    assert all(robot["name"] != robot_in_match["name"] for robot_in_match in data["robots"])
     assert any(new_robot["name"] == robot["name"] for robot in data["robots"])
 
 
@@ -718,3 +712,35 @@ def test_leave_started_match():
 
     data = response.json()
     assert data["detail"] == "Match has already started"
+
+
+def test_leave_match():
+    users = register_random_users(2)
+    robot = create_random_robots(users[1]["token"], 1)[0]
+
+    match = create_random_matches(users[0]["token"], 1)[0]
+
+    json_form = {"robot_id": robot["id"], "password": match["password"]}
+    tok_header = {"token": users[1]["token"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 201
+
+    response = cl.get(f"/matches/{match['id']}", headers=tok_header)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert str(data["id"]) == match["id"]
+    assert any(robot["name"] == robot_in_match["name"] for robot_in_match in data["robots"])
+
+    response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
+    assert response.status_code == 201
+
+    response = cl.get(f"/matches/{match['id']}", headers=tok_header)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert str(data["id"]) == match["id"]
+    assert all(robot["name"] != robot_in_match["name"] for robot_in_match in data["robots"])
