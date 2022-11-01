@@ -11,3 +11,4 @@ python-jose==3.3.0
 cryptography==38.0.1
 python-multipart==0.0.5
 coverage==6.5.0
+websockets==10.4

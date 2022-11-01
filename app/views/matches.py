@@ -190,9 +190,6 @@ rooms: Dict[int, Room] = {}
 def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
     username = get_current_user(token)
 
-    if username is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
     with db_session:
         m = Match.get(id=match_id)
 
