@@ -25,6 +25,7 @@ class Board:
     def __init__(self, robot_ids: List):
         self.robots = []
         self.missiles = []
+        self.cur_missile = 0
 
         init_pos = generate_init_positions(len(robot_ids))
         for i, r_id in enumerate(robot_ids):
@@ -44,7 +45,11 @@ class Board:
             # neither scan nor attack depend on internal logic of others
             r.respond()
             r._scan(other._pos for other in self.robots if other is not r)
-            r._launch_missile(self.missiles)
+            maybe_missile = r._launch_missile()
+            if maybe_missile is not None:
+                maybe_missile._id = self.cur_missile
+                self.missiles.append(maybe_missile)
+                self.cur_missile += 1
 
         self.missiles = [m for m in self.missiles if m._dist > 0]
         for m in self.missiles:
@@ -69,7 +74,7 @@ class Board:
             for r in self.robots
         }
         m_summary = [
-            schemas.MissileInRound(x=m._pos[0], y=m._pos[1], exploding=m._dist <= 0)
+            schemas.MissileInRound(id=m._id, x=m._pos[0], y=m._pos[1], exploding=m._dist <= 0)
             for m in self.missiles
         ]
         return schemas.Round(robots=r_summary, missiles=m_summary)
