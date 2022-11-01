@@ -24,7 +24,7 @@ def generate_init_positions(n: int) -> List[Tuple[float, float]]:
 class Board:
     def __init__(self, robot_ids: List):
         self.robots = []
-        self.missiles = []
+        self.missiles = {}
         self.cur_missile = 0
 
         init_pos = generate_init_positions(len(robot_ids))
@@ -47,19 +47,18 @@ class Board:
             r._scan(other._pos for other in self.robots if other is not r)
             maybe_missile = r._launch_missile()
             if maybe_missile is not None:
-                maybe_missile._id = self.cur_missile
-                self.missiles.append(maybe_missile)
+                self.missiles[self.cur_missile] = maybe_missile
                 self.cur_missile += 1
 
-        self.missiles = [m for m in self.missiles if m._dist > 0]
-        for m in self.missiles:
+        self.missiles = {k: m for k, m in self.missiles.items() if m._dist > 0}
+        for m in self.missiles.values():
             m._advance()
-        self.missiles = [
-            m
-            for m in self.missiles
+        self.missiles = {
+            k: m
+            for k, m in self.missiles.items()
             if 0 < m._pos[0] < BOARD_SZ and 0 < m._pos[1] < BOARD_SZ
-        ]
-        for m in self.missiles:
+        }
+        for m in self.missiles.values():
             m._explode(self.robots)
 
         for i in range(len(self.robots)):
@@ -73,8 +72,10 @@ class Board:
             r._id: schemas.RobotInRound(x=r._pos[0], y=r._pos[1], dmg=r._dmg)
             for r in self.robots
         }
-        m_summary = [
-            schemas.MissileInRound(id=m._id, x=m._pos[0], y=m._pos[1], exploding=m._dist <= 0)
-            for m in self.missiles
-        ]
+        m_summary = {
+            k: schemas.MissileInRound(
+                sender_id=m._sender, x=m._pos[0], y=m._pos[1], exploding=m._dist <= 0
+            )
+            for k, m in self.missiles.items()
+        }
         return schemas.Round(robots=r_summary, missiles=m_summary)

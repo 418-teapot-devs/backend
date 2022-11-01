@@ -20,8 +20,8 @@ def orientation(a, b, c):
 
 
 class Missile:
-    def __init__(self, src: Tuple[float, float], dir: float, dist: float):
-        self._id = None
+    def __init__(self, sender, src: Tuple[float, float], dir: float, dist: float):
+        self._sender = sender
         self._pos = src
         self._dir = (math.cos(dir), math.sin(dir))
         self._dist = dist
@@ -106,7 +106,7 @@ class Robot(abc.ABC):
         self._cannon_cooldown = CANNON_COOLDOWN
         dir, dist = self._cannon_params
         self._cannon_params = None
-        return Missile(self._pos, dir, dist)
+        return Missile(self._id, self._pos, dir, dist)
 
     def _move_and_check_crash(self, others: List["Robot"]):
         # Robot is dead
@@ -122,8 +122,7 @@ class Robot(abc.ABC):
         delta_pos = self._current_vel * DELTA_TIME * DELTA_VEL
         delta_x = math.cos(self._dir) * delta_pos
         delta_y = math.sin(self._dir) * delta_pos
-        delta_pos = (delta_x, delta_y)
-        self._pos = (self._pos[0] + delta_pos[0], self._pos[0] + delta_pos[0])
+        self._pos = (self._pos[0] + delta_x, self._pos[1] + delta_y)
         # Check against other robots and take collision damage
         for r in others:
             if math.dist(self._pos, r._pos) < ROBOT_DIAMETER:
@@ -133,7 +132,7 @@ class Robot(abc.ABC):
         if not (0 < self._pos[0] < BOARD_SZ and 0 < self._pos[1] < BOARD_SZ):
             self._pos = (
                 clamp(self._pos[0], 0, BOARD_SZ),
-                clamp(self._pos[0], 0, BOARD_SZ),
+                clamp(self._pos[1], 0, BOARD_SZ),
             )
             self._dmg += COLLISION_DMG
 

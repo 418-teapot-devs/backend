@@ -47,5 +47,7 @@ def simulate(schema: SimulationRequest, token: str = Header()):
     for _ in range(rounds):
         b.next_round()
         g.append(b.to_round_schema())
+        if len(b.robots) == 0 and len(b.missiles) == 0:
+            break
 
     return SimulationResponse(robots=robots, rounds=g)

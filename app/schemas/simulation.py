@@ -32,7 +32,7 @@ class RobotInRound(BaseModel):
 
 
 class MissileInRound(BaseModel):
-    id: int
+    sender_id: int
     x: int
     y: int
     exploding: bool
@@ -40,7 +40,7 @@ class MissileInRound(BaseModel):
 
 class Round(BaseModel):
     robots: Dict[Any, RobotInRound]
-    missiles: List[MissileInRound]
+    missiles: Dict[int, MissileInRound]
 
 
 class SimulationResponse(BaseModel):

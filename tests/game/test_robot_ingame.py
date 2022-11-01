@@ -117,21 +117,23 @@ def test_bot_scan():
 
 def test_bot_cannon():
     r = NoMove(1, (404, 502))
-    m = []
+    m = {}
     assert r.is_cannon_ready() == True
     r.cannon(60, 300)
-    r._launch_missile(m)
+    m[0] = r._launch_missile()
+    assert m[0] is not None
     assert r.is_cannon_ready() == False
-    assert r._cannon_cooldown == CANNON_COOLDOWN - 1
+    assert r._cannon_cooldown == CANNON_COOLDOWN
     assert len(m) == 1
     m = m[0]
+    assert m._sender == 1
     assert m._pos == (404, 502)
     assert m._dist == 300
     assert m._dir == (math.cos(math.radians(60)), math.sin(math.radians(60)))
 
 
 def test_missile_advance():
-    m = Missile((500, 500), math.radians(90), 1000)
+    m = Missile(234, (500, 500), math.radians(90), 1000)
     m._advance()
     assert m._pos == (500, 500 + MISSILE_D_DELTA)
     assert m._dir == (math.cos(math.radians(90)), 1)
@@ -141,7 +143,7 @@ def test_missile_advance():
 def test_missile_explode():
     dists = [500, 510, 530, 550]
     dmgs = [NEAR_EXPLOSION_DMG, MID_EXPLOSION_DMG, FAR_EXPLOSION_DMG, 0]
-    m = Missile((500, 500), 0, 0)
+    m = Missile(234, (500, 500), 0, 0)
     robots: List[Robot] = [NoMove(i, (500, i)) for i in dists]
     m._explode(robots)
     assert all(r._dmg == d for r, d in zip(robots, dmgs))
