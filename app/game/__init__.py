@@ -1,6 +1,6 @@
-import os
+from app.util.assets import ASSETS_MODULE
 
-ROBOT_MODULE = os.environ["PYROBOTS_ASSETS"].replace("/", ".") + ".robots"
+ROBOT_MODULE = f"{ASSETS_MODULE}.robots.code"
 
 # Physics
 FPS = 30

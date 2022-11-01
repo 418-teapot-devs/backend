@@ -88,7 +88,7 @@ def test_get_robots():
         response = cl.get("/robots/", headers={"token": token})
         robot = next(filter(lambda r: r["name"] == robot_name, list(response.json())))
 
-        if robot["avatar"]:
-            assert f"{robot['robot_id']}" in robot["avatar"]
+        if robot["avatar_url"]:
+            assert f"{robot['robot_id']}" in robot["avatar_url"]
         else:
-            assert not robot["avatar"]
+            assert not robot["avatar_url"]

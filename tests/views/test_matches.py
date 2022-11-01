@@ -73,6 +73,17 @@ def test_created_invalid_match():
             "algo",
             404,
         ),
+        (
+            tokens["bruno"],
+            "partida1",
+            "1",
+            2,
+            4,
+            10000,
+            200,
+            "algo",
+            401,
+        ),
     ]
 
     for (
