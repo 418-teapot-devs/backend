@@ -153,10 +153,7 @@ def create_match(form_data: MatchCreateRequest, token: str = Header()):
 
 @router.get("/{match_id}")
 def get_match(match_id: int, token: str = Header()):
-    username = get_current_user(token)
-
-    if username is None:
-        raise HTTPException(status_code=404, detail="User not found")
+    get_current_user(token)
 
     with db_session:
         m = Match.get(id=match_id)
