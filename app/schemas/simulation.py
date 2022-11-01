@@ -32,6 +32,7 @@ class RobotInRound(BaseModel):
 
 
 class MissileInRound(BaseModel):
+    id: int
     x: int
     y: int
     exploding: bool
