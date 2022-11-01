@@ -75,6 +75,8 @@ def login(form_data: Login):
         token_data = {"sub": "login", "username": user.name}
         token = create_access_token(token_data, timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS))
 
-    profile = UserProfile(username=user.name, email=user.email, avatar_url=get_user_avatar(user))
+    profile = UserProfile(
+        username=user.name, email=user.email, avatar_url=get_user_avatar(user)
+    )
 
     return LoginResponse(token=token, profile=profile)

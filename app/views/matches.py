@@ -1,14 +1,8 @@
 import asyncio
 from enum import Enum
-from typing import Dict, Any
+from typing import Any, Dict
 
-from fastapi import (
-    APIRouter,
-    Header,
-    HTTPException,
-    Response,
-    WebSocket,
-)
+from fastapi import APIRouter, Header, HTTPException, Response, WebSocket
 from pony.orm import commit, db_session, select
 
 from app.models.match import Match
@@ -21,9 +15,9 @@ from app.schemas.match import (
     MatchResponse,
     RobotInMatch,
 )
+from app.util.assets import get_robot_avatar, get_user_avatar
 from app.util.auth import get_current_user
 from app.util.room import Room
-from app.util.assets import get_user_avatar, get_robot_avatar
 
 router = APIRouter()
 
@@ -165,7 +159,9 @@ def get_match(match_id: int, token: str = Header()):
         for r in m.plays:
             r_avatar_url = get_robot_avatar(r)
             robots.append(
-                RobotInMatch(name=r.name, avatar_url=r_avatar_url, username=r.owner.name)
+                RobotInMatch(
+                    name=r.name, avatar_url=r_avatar_url, username=r.owner.name
+                )
             )
 
         host_avatar_url = get_user_avatar(m.host)
@@ -207,7 +203,9 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
         if r.owner.name != username:
             raise HTTPException(status_code=403, detail="Robot does not belong to user")
 
-        robot_from_owner = m.plays.select(lambda robot: r.owner.name == robot.owner.name)
+        robot_from_owner = m.plays.select(
+            lambda robot: r.owner.name == robot.owner.name
+        )
         if m.plays.count() >= m.max_players and not robot_from_owner:
             raise HTTPException(status_code=403, detail="Match is full")
 
@@ -229,7 +227,7 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
 
 
 @router.websocket("/{match_id}/ws")
-async def websocket_endpoint(ws: WebSocket, match_id: int): #pragma: no cover
+async def websocket_endpoint(ws: WebSocket, match_id: int):  # pragma: no cover
     with db_session:
         match = match_to_dict(Match.get(id=match_id))
 
@@ -251,7 +249,7 @@ async def websocket_endpoint(ws: WebSocket, match_id: int): #pragma: no cover
 
 
 @router.post("/{match_id}/event")
-def set_event(match_id: int): #pragma: no cover
+def set_event(match_id: int):  # pragma: no cover
     if rooms.get(match_id) is None:
         raise HTTPException(status_code=404)
     rooms[match_id].event.set()

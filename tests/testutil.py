@@ -1,13 +1,14 @@
 import random
 import string
-
 from urllib.parse import quote_plus
+
 from fastapi.testclient import TestClient
-from pony.orm import db_session, commit
+from pony.orm import commit, db_session
+
 from app.main import app
 from app.models.match import Match
-from app.models.user import User
 from app.models.robot import Robot
+from app.models.user import User
 from app.util.auth import get_current_user
 
 cl = TestClient(app)
@@ -18,7 +19,7 @@ def test_must_fail():
 
 
 def random_ascii_string(length):
-    return ''.join(random.choice(string.ascii_letters) for _ in range(length))
+    return "".join(random.choice(string.ascii_letters) for _ in range(length))
 
 
 def json_to_queryparams(json: dict):
@@ -26,10 +27,13 @@ def json_to_queryparams(json: dict):
 
 
 def register_random_users(count):
-    users = [{"username": None, "password": None, "email": None, "token": None} for _ in range(count)]
+    users = [
+        {"username": None, "password": None, "email": None, "token": None}
+        for _ in range(count)
+    ]
 
     for i in range(count):
-        username = f'{i}' + random_ascii_string(9)
+        username = f"{i}" + random_ascii_string(9)
         password = f"{i}Ab" + random_ascii_string(5)
         email = f"{i}@randomjunk.com"
 
@@ -53,12 +57,15 @@ def create_random_robots(token, count):
     robot_code = open("tests/assets/robots/code/test_id_bot.py")
 
     for i in range(count):
-        robotname = f'{i}' + random_ascii_string(9)
+        robotname = f"{i}" + random_ascii_string(9)
 
         tok_header = {"token": token}
 
-        response = cl.post(f"/robots/?name={quote_plus(robotname)}",
-                           headers=tok_header, files=[("code", robot_code)])
+        response = cl.post(
+            f"/robots/?name={quote_plus(robotname)}",
+            headers=tok_header,
+            files=[("code", robot_code)],
+        )
         assert response.status_code == 201
 
         response = cl.get("/robots/", headers=tok_header)
@@ -79,7 +86,7 @@ def create_random_matches(token, count):
     user = User[username]
 
     robot = create_random_robots(token, 1)[0]
-    robot = Robot[robot['id']]
+    robot = Robot[robot["id"]]
 
     matches = [{"id": None, "password": None} for _ in range(count)]
     for i in range(count):

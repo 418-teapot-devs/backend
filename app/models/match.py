@@ -1,4 +1,4 @@
-from pony.orm import PrimaryKey, Required, Optional, Set
+from pony.orm import Optional, PrimaryKey, Required, Set
 
 from app.models.database import db
 

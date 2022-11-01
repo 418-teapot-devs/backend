@@ -1,20 +1,25 @@
 from datetime import timedelta
 
 from fastapi.testclient import TestClient
-from pony.orm import db_session, commit
+from pony.orm import commit, db_session
 
 from app.main import app
-from app.util.auth import create_access_token
 from app.models.match import Match
-from tests.testutil import register_random_users, create_random_robots, create_random_matches, json_to_queryparams, random_ascii_string
+from app.util.auth import create_access_token
+from tests.testutil import (
+    create_random_matches,
+    create_random_robots,
+    json_to_queryparams,
+    random_ascii_string,
+    register_random_users,
+)
 
 cl = TestClient(app)
 
 
 def test_create_from_nonexistant_user():
     fake_token = create_access_token(
-        {"sub": "login", "username": "leo"},
-        timedelta(hours=1.0)
+        {"sub": "login", "username": "leo"}, timedelta(hours=1.0)
     )
 
     test_match = {
@@ -24,7 +29,7 @@ def test_create_from_nonexistant_user():
         "min_players": 0,
         "rounds": 0,
         "games": 0,
-        "password": "string"
+        "password": "string",
     }
 
     response = cl.post("/matches/", headers={"token": fake_token}, json=test_match)
@@ -33,8 +38,7 @@ def test_create_from_nonexistant_user():
 
 def test_get_from_nonexistant_user():
     fake_token = create_access_token(
-        {"sub": "login", "username": "leo"},
-        timedelta(hours=1.0)
+        {"sub": "login", "username": "leo"}, timedelta(hours=1.0)
     )
 
     response = cl.get("/matches/1", headers={"token": fake_token})
@@ -43,8 +47,7 @@ def test_get_from_nonexistant_user():
 
 def test_get_with_qp_from_nonexistant_user():
     fake_token = create_access_token(
-        {"sub": "login", "username": "leo"},
-        timedelta(hours=1.0)
+        {"sub": "login", "username": "leo"}, timedelta(hours=1.0)
     )
 
     response = cl.get("/matches/?match_type=created", headers={"token": fake_token})
@@ -456,7 +459,9 @@ def test_join_match_nonexistant_robot():
     json_form = {"robot_id": 100000000, "password": match["password"]}
     tok_header = {"token": user["token"]}
 
-    response = cl.put(f"/matches/{match['id']}/join/", headers=tok_header, json=json_form)
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
     assert response.status_code == 404
 
     data = response.json()
@@ -472,7 +477,9 @@ def test_join_match_unowned_robot():
     json_form = {"robot_id": robot["id"], "password": match["password"]}
     tok_header = {"token": users[1]["token"]}
 
-    response = cl.put(f"/matches/{match['id']}/join/", headers=tok_header, json=json_form)
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
     assert response.status_code == 403
 
     data = response.json()
@@ -494,7 +501,9 @@ def test_join_match_already_started():
     json_form = {"robot_id": robot["id"], "password": match["password"]}
     tok_header = {"token": users[1]["token"]}
 
-    response = cl.put(f"/matches/{match['id']}/join/", headers=tok_header, json=json_form)
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
     assert response.status_code == 403
 
     data = response.json()
@@ -514,13 +523,17 @@ def test_join_full_match():
         json_form = {"robot_id": robots[i]["id"], "password": match["password"]}
         tok_header = {"token": user["token"]}
 
-        response = cl.put(f"/matches/{match['id']}/join/", headers=tok_header, json=json_form)
+        response = cl.put(
+            f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+        )
         assert response.status_code == 201
 
     json_form = {"robot_id": robots[4]["id"], "password": match["password"]}
     tok_header = {"token": users[4]["token"]}
 
-    response = cl.put(f"/matches/{match['id']}/join/", headers=tok_header, json=json_form)
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
     assert response.status_code == 403
 
     data = response.json()
@@ -533,10 +546,12 @@ def test_join_match_invalid_password():
 
     robot = create_random_robots(users[1]["token"], 1)[0]
 
-    json_form = {"robot_id": robot["id"], "password": '1' + match["password"]}
+    json_form = {"robot_id": robot["id"], "password": "1" + match["password"]}
     tok_header = {"token": users[1]["token"]}
 
-    response = cl.put(f"/matches/{match['id']}/join/", headers=tok_header, json=json_form)
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
     assert response.status_code == 403
 
     data = response.json()
@@ -584,7 +599,9 @@ def test_join_match():
     json_form = {"robot_id": robots[1]["id"], "password": match["password"]}
     tok_header = {"token": users[1]["token"]}
 
-    response = cl.put(f"/matches/{match['id']}/join/", headers=tok_header, json=json_form)
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
     assert response.status_code == 201
 
     response = cl.get(f"/matches/{match['id']}", headers=tok_header)
@@ -607,7 +624,9 @@ def test_join_matches_replacing_robot():
     json_form = {"robot_id": robots[1]["id"], "password": match["password"]}
     tok_header = {"token": users[1]["token"]}
 
-    response = cl.put(f"/matches/{match['id']}/join/", headers=tok_header, json=json_form)
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
     assert response.status_code == 201
 
     response = cl.get(f"/matches/{match['id']}", headers=tok_header)
@@ -623,7 +642,9 @@ def test_join_matches_replacing_robot():
     json_form = {"robot_id": new_robot["id"], "password": match["password"]}
     tok_header = {"token": users[1]["token"]}
 
-    response = cl.put(f"/matches/{match['id']}/join/", headers=tok_header, json=json_form)
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
     assert response.status_code == 201
 
     response = cl.get(f"/matches/{match['id']}", headers=tok_header)

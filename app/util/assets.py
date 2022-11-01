@@ -1,6 +1,6 @@
 import os
 
-from app.models import User, Robot
+from app.models import Robot, User
 
 ASSETS_DIR = os.environ["PYROBOTS_ASSETS"]
 ASSETS_MODULE = ASSETS_DIR.replace("/", ".")
