@@ -1,20 +1,21 @@
+import asyncio
 from enum import Enum
-from typing import Dict
+from typing import Any, Dict
 
-from fastapi import (
-    APIRouter,
-    Header,
-    HTTPException,
-    Response,
-    WebSocket,
-    WebSocketDisconnect,
-)
+from fastapi import APIRouter, Header, HTTPException, Response, WebSocket
 from pony.orm import commit, db_session, select
 
 from app.models.match import Match
 from app.models.robot import Robot
 from app.models.user import User
-from app.schemas.match import Host, MatchCreateRequest, MatchResponse, RobotInMatch
+from app.schemas.match import (
+    Host,
+    MatchCreateRequest,
+    MatchJoinRequest,
+    MatchResponse,
+    RobotInMatch,
+)
+from app.util.assets import get_robot_avatar, get_user_avatar
 from app.util.auth import get_current_user
 from app.util.room import Room
 
@@ -29,6 +30,30 @@ class MatchType(str, Enum):
 
 
 query_base = select((m, r) for m in Match for r in m.plays)
+
+
+def match_to_dict(match: Match) -> Dict[str, Any]:
+    robots = []
+    for robot in match.plays:
+        avatar_url = get_robot_avatar(robot)
+        robots.append(
+            {"name": robot.name, "avatar_url": avatar_url, "username": robot.owner.name}
+        )
+
+    host_avatar_url = get_user_avatar(match.host)
+
+    return {
+        "id": match.id,
+        "host": {"username": match.host.name, "avatar_url": host_avatar_url},
+        "name": match.name,
+        "max_players": match.max_players,
+        "min_players": match.min_players,
+        "games": match.game_count,
+        "rounds": match.round_count,
+        "robots": robots,
+        "is_private": False,
+        "status": match.state,
+    }
 
 
 @router.get("/")
@@ -62,21 +87,18 @@ def get_matches(match_type: MatchType, token: str = Header()):
         for m, _ in queried_matches:
             robots = []
             for r in m.plays:
-                r_avatar = f"assets/avatars/robots/{r.id}.png" if r.has_avatar else None
+                r_avatar = get_robot_avatar(r)
                 robots.append(
                     RobotInMatch(
                         name=r.name, avatar_url=r_avatar, username=r.owner.name
                     )
                 )
 
-            host = m.host
-            h_avatar = (
-                f"assets/avatars/robots/{host.name}.png" if host.has_avatar else None
-            )
+            h_avatar = get_user_avatar(m.host)
             matches.append(
                 MatchResponse(
                     id=m.id,
-                    host=Host(username=username, avatar_url=h_avatar),
+                    host=Host(username=m.host.name, avatar_url=h_avatar),
                     name=m.name,
                     max_players=m.max_players,
                     min_players=m.min_players,
@@ -116,6 +138,7 @@ def create_match(form_data: MatchCreateRequest, token: str = Header()):
             game_count=form_data.games,
             round_count=form_data.rounds,
             state="Lobby",
+            password=form_data.password,
         )
         commit()
 
@@ -124,19 +147,27 @@ def create_match(form_data: MatchCreateRequest, token: str = Header()):
 
 @router.get("/{match_id}")
 def get_match(match_id: int, token: str = Header()):
-    username = get_current_user(token)
+    get_current_user(token)
 
     with db_session:
         m = Match.get(id=match_id)
+
+        if m is None:
+            raise HTTPException(status_code=404, detail="Match not found")
+
         robots = []
         for r in m.plays:
+            r_avatar_url = get_robot_avatar(r)
             robots.append(
-                RobotInMatch(name=r.name, avatar_url=None, username=r.owner.name)
+                RobotInMatch(
+                    name=r.name, avatar_url=r_avatar_url, username=r.owner.name
+                )
             )
 
+        host_avatar_url = get_user_avatar(m.host)
         return MatchResponse(
             id=m.id,
-            host=Host(username=username, avatar_url=None),
+            host=Host(username=m.host.name, avatar_url=host_avatar_url),
             name=m.name,
             max_players=m.max_players,
             min_players=m.min_players,
@@ -151,51 +182,74 @@ def get_match(match_id: int, token: str = Header()):
 rooms: Dict[int, Room] = {}
 
 
-@router.websocket("/{match_id}/ws")
-async def websocket_endpoint(ws: WebSocket, match_id: int):
+@router.put("/{match_id}/join/", status_code=201)
+def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
+    username = get_current_user(token)
+
     with db_session:
         m = Match.get(id=match_id)
 
-        robots = []
-        for r in m.plays:
-            avatar_url = f"/assets/avatars/robot/{r.id}.png" if r.has_avatar else None
-            robots.append(
-                {"name": r.name, "avatar_url": avatar_url, "username": r.owner.name}
-            )
+        if m is None:
+            raise HTTPException(status_code=404, detail="Match not found")
 
-        match = {
-            "id": m.id,
-            "host": {"username": m.host.name, "avatar_url": None},
-            "name": m.name,
-            "max_players": m.max_players,
-            "min_players": m.min_players,
-            "games": m.game_count,
-            "rounds": m.round_count,
-            "robots": robots,
-            "is_private": False,
-            "status": m.state,
-        }
+        if m.state != "Lobby":
+            raise HTTPException(status_code=403, detail="Match has already started")
 
-        if rooms.get(match_id) is None:
-            rooms[match_id] = Room()
+        r = Robot.get(id=form.robot_id)
 
-        await rooms[match_id].connect(ws)
+        if r is None:
+            raise HTTPException(status_code=404, detail="Robot not found")
 
-        try:
-            while True:
-                await rooms[match_id].event.wait()
-                await rooms[match_id].broadcast(match)
-                rooms[match_id].event.clear()
+        if r.owner.name != username:
+            raise HTTPException(status_code=403, detail="Robot does not belong to user")
 
-        except Exception as _:
-            rooms[match_id].disconnect(ws)
-            if not rooms[match_id].clients:
-                rooms.pop(match_id)
+        robot_from_owner = m.plays.select(
+            lambda robot: r.owner.name == robot.owner.name
+        )
+        if m.plays.count() >= m.max_players and not robot_from_owner:
+            raise HTTPException(status_code=403, detail="Match is full")
+
+        if m.password and form.password != m.password:
+            raise HTTPException(status_code=403, detail="Match password is incorrect")
+
+        if robot_from_owner:
+            m.plays.remove(robot_from_owner)
+
+        m.plays.add(r)
+
+        match = match_to_dict(m)
+
+    room = rooms.get(match_id)
+
+    if room:
+        asyncio.run(room.broadcast(match))
+        room.event.clear()
+
+
+@router.websocket("/{match_id}/ws")
+async def websocket_endpoint(ws: WebSocket, match_id: int):  # pragma: no cover
+    with db_session:
+        match = match_to_dict(Match.get(id=match_id))
+
+    if rooms.get(match_id) is None:
+        rooms[match_id] = Room()
+
+    await rooms[match_id].connect(ws)
+
+    try:
+        while True:
+            await rooms[match_id].event.wait()
+            await rooms[match_id].broadcast(match)
+            rooms[match_id].event.clear()
+
+    except Exception as _:
+        rooms[match_id].disconnect(ws)
+        if not rooms[match_id].clients:
+            rooms.pop(match_id)
 
 
 @router.post("/{match_id}/event")
-def set_event(match_id: int):
-
+def set_event(match_id: int):  # pragma: no cover
     if rooms.get(match_id) is None:
         raise HTTPException(status_code=404)
     rooms[match_id].event.set()

@@ -1,14 +1,69 @@
-from urllib.parse import quote_plus
+from datetime import timedelta
 
 from fastapi.testclient import TestClient
+from pony.orm import commit, db_session
 
 from app.main import app
+from app.models.match import Match
+from app.util.auth import create_access_token
+from tests.testutil import (
+    create_random_matches,
+    create_random_robots,
+    json_to_queryparams,
+    random_ascii_string,
+    register_random_users,
+)
 
 cl = TestClient(app)
 
 
-def json_to_queryparams(json: dict):
-    return "?" + "&".join([f"{k}={quote_plus(v)}" for k, v in json.items()])
+def test_create_from_nonexistant_user():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "leo"}, timedelta(hours=1.0)
+    )
+
+    test_match = {
+        "name": "string",
+        "robot_id": 0,
+        "max_players": 0,
+        "min_players": 0,
+        "rounds": 0,
+        "games": 0,
+        "password": "string",
+    }
+
+    response = cl.post("/matches/", headers={"token": fake_token}, json=test_match)
+    assert response.status_code == 404
+
+
+def test_get_from_nonexistant_user():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "leo"}, timedelta(hours=1.0)
+    )
+
+    response = cl.get("/matches/1", headers={"token": fake_token})
+    assert response.status_code == 404
+
+
+def test_get_with_qp_from_nonexistant_user():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "leo"}, timedelta(hours=1.0)
+    )
+
+    response = cl.get("/matches/?match_type=created", headers={"token": fake_token})
+    assert response.status_code == 404
+
+
+def test_get_nonexistent_match():
+    user = {"username": "gino", "password": "GatoTruco123", "email": "k@gmail.com"}
+
+    response = cl.post(f"/users/{json_to_queryparams(user)}")
+    assert response.status_code == 201
+
+    token = response.json()["token"]
+
+    response = cl.get("/matches/1", headers={"token": token})
+    assert response.status_code == 404
 
 
 def test_created_invalid_match():
@@ -381,3 +436,221 @@ def test_get_created():
             "is_private": is_private,
             "robots": robots,
         }
+
+
+def test_join_nonexistant_match():
+    user = register_random_users(1)[0]
+    robot = create_random_robots(user["token"], 1)[0]
+
+    json_form = {"robot_id": robot["id"], "password": ""}
+    tok_header = {"token": user["token"]}
+
+    response = cl.put("/matches/1/join/", headers=tok_header, json=json_form)
+    assert response.status_code == 404
+
+    data = response.json()
+    assert data["detail"] == "Match not found"
+
+
+def test_join_match_nonexistant_robot():
+    user = register_random_users(1)[0]
+    match = create_random_matches(user["token"], 1)[0]
+
+    json_form = {"robot_id": 100000000, "password": match["password"]}
+    tok_header = {"token": user["token"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 404
+
+    data = response.json()
+    assert data["detail"] == "Robot not found"
+
+
+def test_join_match_unowned_robot():
+    users = register_random_users(2)
+    robot = create_random_robots(users[0]["token"], 1)[0]
+    match = create_random_matches(users[0]["token"], 1)[0]
+
+    # robot id from first user, token from second
+    json_form = {"robot_id": robot["id"], "password": match["password"]}
+    tok_header = {"token": users[1]["token"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 403
+
+    data = response.json()
+    assert data["detail"] == "Robot does not belong to user"
+
+
+def test_join_match_already_started():
+    users = register_random_users(2)
+    match = create_random_matches(users[0]["token"], 1)[0]
+
+    # for second user
+    robot = create_random_robots(users[1]["token"], 1)[0]
+
+    with db_session:
+        m = Match[match["id"]]
+        m.state = "Started"
+        commit()
+
+    json_form = {"robot_id": robot["id"], "password": match["password"]}
+    tok_header = {"token": users[1]["token"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 403
+
+    data = response.json()
+    assert data["detail"] == "Match has already started"
+
+
+def test_join_full_match():
+    users = register_random_users(5)
+
+    robots = []
+    for user in users:
+        robots.append(create_random_robots(user["token"], 1)[0])
+
+    match = create_random_matches(users[0]["token"], 1)[0]
+
+    for i, user in enumerate(users[1:-1], start=1):
+        json_form = {"robot_id": robots[i]["id"], "password": match["password"]}
+        tok_header = {"token": user["token"]}
+
+        response = cl.put(
+            f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+        )
+        assert response.status_code == 201
+
+    json_form = {"robot_id": robots[4]["id"], "password": match["password"]}
+    tok_header = {"token": users[4]["token"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 403
+
+    data = response.json()
+    assert data["detail"] == "Match is full"
+
+
+def test_join_match_invalid_password():
+    users = register_random_users(2)
+    match = create_random_matches(users[0]["token"], 1)[0]
+
+    robot = create_random_robots(users[1]["token"], 1)[0]
+
+    json_form = {"robot_id": robot["id"], "password": "1" + match["password"]}
+    tok_header = {"token": users[1]["token"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 403
+
+    data = response.json()
+    assert data["detail"] == "Match password is incorrect"
+
+
+def test_join_matches_empty_password():
+    users = register_random_users(2)
+
+    robots = []
+    for user in users:
+        robots.append(create_random_robots(user["token"], 1)[0])
+
+    response = cl.post(
+        "/matches/",
+        headers={"token": users[0]["token"]},
+        json={
+            "name": "bg1!",
+            "robot_id": robots[0]["id"],
+            "max_players": 4,
+            "min_players": 2,
+            "rounds": 10000,
+            "games": 150,
+            "password": "",
+        },
+    )
+    assert response.status_code == 201
+
+    json_form = {"robot_id": robots[1]["id"], "password": ""}
+    tok_header = {"token": users[1]["token"]}
+
+    response = cl.put("/matches/1/join/", headers=tok_header, json=json_form)
+    assert response.status_code == 201
+
+
+def test_join_match():
+    users = register_random_users(2)
+
+    robots = []
+    for user in users:
+        robots.append(create_random_robots(user["token"], 1)[0])
+
+    match = create_random_matches(users[0]["token"], 1)[0]
+
+    json_form = {"robot_id": robots[1]["id"], "password": match["password"]}
+    tok_header = {"token": users[1]["token"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 201
+
+    response = cl.get(f"/matches/{match['id']}", headers=tok_header)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert str(data["id"]) == match["id"]
+    assert any(robots[1]["name"] == robot["name"] for robot in data["robots"])
+
+
+def test_join_matches_replacing_robot():
+    users = register_random_users(2)
+
+    robots = []
+    for user in users:
+        robots.append(create_random_robots(user["token"], 1)[0])
+
+    match = create_random_matches(users[0]["token"], 1)[0]
+
+    json_form = {"robot_id": robots[1]["id"], "password": match["password"]}
+    tok_header = {"token": users[1]["token"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 201
+
+    response = cl.get(f"/matches/{match['id']}", headers=tok_header)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert str(data["id"]) == match["id"]
+    assert any(robots[1]["name"] == robot["name"] for robot in data["robots"])
+
+    # joining with a new robot must replace the old one
+    new_robot = create_random_robots(users[1]["token"], 1)[0]
+
+    json_form = {"robot_id": new_robot["id"], "password": match["password"]}
+    tok_header = {"token": users[1]["token"]}
+
+    response = cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+    assert response.status_code == 201
+
+    response = cl.get(f"/matches/{match['id']}", headers=tok_header)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert str(data["id"]) == match["id"]
+    assert all(robots[1]["name"] != robot["name"] for robot in data["robots"])
+    assert any(new_robot["name"] == robot["name"] for robot in data["robots"])

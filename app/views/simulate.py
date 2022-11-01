@@ -6,7 +6,7 @@ from app.models.robot import Robot
 from app.models.user import User
 from app.schemas.match import RobotInMatch
 from app.schemas.simulation import SimulationRequest, SimulationResponse
-from app.util.assets import ASSETS_DIR
+from app.util.assets import ASSETS_DIR, get_robot_avatar
 from app.util.auth import get_current_user
 
 DEFAULT_ROUNDS = 100
@@ -35,7 +35,8 @@ def simulate(schema: SimulationRequest, token: str = Header()):
                     status_code=403,
                     detail=f"robot requested is not owned by user {username}",
                 )
-            r_avatar = f"assets/avatars/robots/{r.id}.png" if r.has_avatar else None
+
+            r_avatar = get_robot_avatar(r)
             robots[bot] = RobotInMatch(
                 name=r.name, avatar_url=r_avatar, username=r.owner.name
             )
