@@ -189,7 +189,7 @@ def get_match(match_id: int, token: str = Header()):
 rooms: Dict[int, Room] = {}
 
 
-@router.put("/{match_id}/join", status_code=201)
+@router.put("/{match_id}/join/", status_code=201)
 def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
     username = get_current_user(token)
 
