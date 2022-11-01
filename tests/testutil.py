@@ -3,7 +3,7 @@ import string
 
 from urllib.parse import quote_plus
 from fastapi.testclient import TestClient
-from pony.orm import db_session
+from pony.orm import db_session, commit
 from app.main import app
 from app.models.match import Match
 from app.models.user import User
@@ -94,8 +94,9 @@ def create_random_matches(token, count):
             min_players=2,
             password=password,
         )
+        commit()
 
-        matches[i]["id"] = match.id
+        matches[i]["id"] = f"{match.id}"
         matches[i]["password"] = password
 
     return matches
