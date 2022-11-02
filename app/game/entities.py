@@ -33,6 +33,10 @@ class Missile:
             delta_pos = (self._dir[0] * delta_pos, self._dir[1] * delta_pos)
             self._pos = (self._pos[0] + delta_pos[0], self._pos[1] + delta_pos[1])
 
+        if not (0 < self._pos[0] < BOARD_SZ and 0 < self._pos[1] < BOARD_SZ):
+            # force the misile to explode
+            self._dist = 0
+
     def _explode(self, robots: List["Robot"]):
         if self._dist <= 0:
             for r in robots:
@@ -130,10 +134,13 @@ class Robot(abc.ABC):
                 r._dmg += COLLISION_DMG
                 self._dmg += COLLISION_DMG
         # Check for collisions against walls
-        if not (0 < self._pos[0] < BOARD_SZ and 0 < self._pos[1] < BOARD_SZ):
+        radius = ROBOT_DIAMETER / 2
+        lbound = radius
+        ubound = BOARD_SZ - radius
+        if not (lbound < self._pos[0] < ubound and lbound < self._pos[1] < ubound):
             self._pos = (
-                clamp(self._pos[0], 0, BOARD_SZ),
-                clamp(self._pos[1], 0, BOARD_SZ),
+                clamp(self._pos[0], lbound, ubound),
+                clamp(self._pos[1], lbound, ubound),
             )
             self._dmg += COLLISION_DMG
 
