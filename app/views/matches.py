@@ -16,6 +16,7 @@ from app.schemas.match import (
     MatchJoinRequest,
     MatchResponse,
     RobotInMatch,
+    RobotResult,
 )
 from app.util.assets import get_robot_avatar, get_user_avatar
 from app.util.auth import get_current_user
@@ -168,6 +169,17 @@ def get_match(match_id: int, token: str = Header()):
                 )
             )
 
+        results = None
+        if m.state == "Finished":
+            robot_results = select(
+                r for r in RobotMatchResult if r.match_id == match_id
+            )
+            results = [
+                RobotResult(
+                    robot_id=r.robot_id, robot_pos=r.position, death_count=r.death_count
+                ) for r in robot_results
+            ]
+
         host_avatar_url = get_user_avatar(m.host)
         return MatchResponse(
             id=m.id,
@@ -180,6 +192,7 @@ def get_match(match_id: int, token: str = Header()):
             is_private=False,
             robots=robots,
             state=m.state,
+            results=results
         )
 
 

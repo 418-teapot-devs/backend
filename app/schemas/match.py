@@ -29,6 +29,12 @@ class RobotInMatch(BaseModel):
     username: str
 
 
+class RobotResult(BaseModel):
+    robot_id: int
+    robot_pos: int
+    death_count: int
+
+
 class MatchResponse(BaseModel):
     id: int
     name: str
@@ -37,6 +43,7 @@ class MatchResponse(BaseModel):
     min_players: int
     games: int
     rounds: int
-    is_private: bool | None
+    is_private: bool
     robots: List[RobotInMatch]
     state: str
+    results: List[RobotResult] | None

@@ -389,6 +389,7 @@ def test_get_created():
             False,
             [{"name": "Marvin", "avatar_url": None, "username": "bruno2"}],
             "Lobby",
+            None,
         ),
         (
             tokens["leo2"],
@@ -402,6 +403,7 @@ def test_get_created():
             False,
             [{"name": "R giskard", "avatar_url": None, "username": "leo2"}],
             "Lobby",
+            None,
         ),
     ]
 
@@ -425,6 +427,7 @@ def test_get_created():
         is_private,
         robots,
         state,
+        results,
     ) in enumerate(test_get_matches):
         response = cl.get("/matches/?match_type=created", headers={"token": token})
 
@@ -440,6 +443,7 @@ def test_get_created():
             "is_private": is_private,
             "robots": robots,
             "state": state,
+            "results": results,
         }
 
 
