@@ -17,7 +17,7 @@ from app.schemas.match import (
 )
 from app.util.assets import get_robot_avatar, get_user_avatar
 from app.util.auth import get_current_user
-from app.util.room import Room
+from app.util.ws import Notifier
 
 router = APIRouter()
 
@@ -74,7 +74,9 @@ def get_matches(match_type: MatchType, token: str = Header()):
                 and r.owner is cur_user
             ),
             MatchType.joined: query_base.filter(
-                lambda m, r: m.state == "Lobby" and r.owner is cur_user and m.host is not cur_user
+                lambda m, r: m.state == "Lobby"
+                and r.owner is cur_user
+                and m.host is not cur_user
             ),
             MatchType.public: query_base.filter(
                 lambda m, _: m.state == "Lobby" and m.host is not cur_user
@@ -179,7 +181,7 @@ def get_match(match_id: int, token: str = Header()):
         )
 
 
-rooms: Dict[int, Room] = {}
+channels: Dict[int, Notifier] = {}
 
 
 @router.put("/{match_id}/join/", status_code=201)
@@ -219,11 +221,106 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
 
         match = match_to_dict(m)
 
-    room = rooms.get(match_id)
+    chan = channels.get(match_id)
 
-    if room:
-        asyncio.run(room.broadcast(match))
-        room.event.clear()
+    # Notify websockets
+    if chan:
+        asyncio.run(chan.push(match))
+
+
+@router.post("/{match_id}/start/")
+def start_match(match_id: int, token: str = Header()):
+    username = get_current_user(token)
+
+    with db_session:
+        if User.get(name=username) is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        m = Match.get(id=match_id)
+
+        if m is None:
+            raise HTTPException(status_code=404, detail="Match not found")
+
+        if m.state != "Lobby":
+            raise HTTPException(status_code=403, detail="Match has already started")
+
+        if m.host != User.get(name=username):
+            raise HTTPException(status_code=403, detail="Host must start the match")
+
+        if len(m.plays) < m.min_players:
+            raise HTTPException(
+                status_code=403, detail="The minimum number of players was not reached"
+            )
+
+        if len(m.plays) > m.max_players:
+            raise HTTPException(status_code=403, detail="Match is full")
+
+        m.state = "InGame"
+        commit()
+
+        match = match_to_dict(m)
+
+        chan = channels.get(match_id)
+
+        if chan:
+            asyncio.run(chan.push(match))
+
+        games_results = []
+        robots = [r.id for r in m.plays]
+        for _ in range(m.game_count):
+            b = Board(robots)
+            games_results.append(b.execute_game(m.round_count))
+
+        deaths_count = {key: 0 for key in robots}
+        for survivors in games_results:
+            for r in robots:
+                if r not in survivors:
+                    deaths_count[r] = deaths_count[r] + 1
+
+        games_results = [x[0] for x in games_results if len(x) == 1]
+        winners_pairs = list(zip(robots, [games_results.count(i) for i in robots]))
+        result_match = {key: value for (key, value) in winners_pairs}
+        result_match = {
+            k: v for k, v in sorted(result_match.items(), key=lambda item: item[1])
+        }
+        ordered_result_match = list(reversed(result_match.keys()))
+
+        m.state = "Finished"
+        commit()
+
+        match = match_to_dict(m)
+
+        chan = channels.get(match_id)
+
+        if chan:
+            asyncio.run(chan.push(match))
+
+        def get_condition(robot_id, dictionary):
+            condition = "Lost"
+            greater = {k: v > dictionary[robot_id] for k, v in dictionary.items()}
+            greater.pop(robot_id)
+
+            if not any(greater.values()):
+                equal = {k: v == dictionary[robot_id] for k, v in dictionary.items()}
+                equal.pop(robot_id)
+                if any(equal.values()):
+                    condition = "Tied"
+                else:
+                    condition = "Won"
+
+            return condition
+
+        for r in robots:
+            RobotMatchResult(
+                robot_id=r,
+                match_id=match_id,
+                position=ordered_result_match.index(r) + 1,
+                death_count=deaths_count[r],
+                condition=get_condition(r, result_match),
+            )
+
+        commit()
+    return {}
 
 
 @router.put("/{match_id}/leave/", status_code=201)
@@ -242,9 +339,7 @@ def leave_match(match_id: int, token: str = Header()):
         if m.state != "Lobby":
             raise HTTPException(status_code=403, detail="Match has already started")
 
-        robot_from_owner = m.plays.select(
-            lambda robot: robot.owner.name == username
-        )
+        robot_from_owner = m.plays.select(lambda robot: robot.owner.name == username)
 
         if not robot_from_owner:
             raise HTTPException(status_code=403, detail="User was not in match")
@@ -252,39 +347,34 @@ def leave_match(match_id: int, token: str = Header()):
         m.plays.remove(robot_from_owner)
         match = match_to_dict(m)
 
-    room = rooms.get(match_id)
+    chan = channels.get(match_id)
 
-    if room:
-        asyncio.run(room.broadcast(match))
-        room.event.clear()
+    # Notify websockets
+    if chan:
+        asyncio.run(chan.push(match))
 
 
 @router.websocket("/{match_id}/ws")
 async def websocket_endpoint(ws: WebSocket, match_id: int):  # pragma: no cover
+    chan = channels.get(match_id)
+    if not chan:
+        chan = Notifier()
+        channels[match_id] = chan
+        # Prime the push notification generator
+        await chan.generator.asend(None)
+
+    await chan.connect(ws)
+
     with db_session:
         match = match_to_dict(Match.get(id=match_id))
 
-    if rooms.get(match_id) is None:
-        rooms[match_id] = Room()
-
-    await rooms[match_id].connect(ws)
+    await ws.send_json(match)
 
     try:
         while True:
-            await rooms[match_id].event.wait()
-            await rooms[match_id].broadcast(match)
-            rooms[match_id].event.clear()
-
-    except Exception as _:
-        rooms[match_id].disconnect(ws)
-        if not rooms[match_id].clients:
-            rooms.pop(match_id)
-
-
-@router.post("/{match_id}/event")
-def set_event(match_id: int):  # pragma: no cover
-    if rooms.get(match_id) is None:
-        raise HTTPException(status_code=404)
-    rooms[match_id].event.set()
-
-    return Response(status_code=200)
+            # only to raise exception when ws disconnects
+            await ws.receive_text()
+    except:
+        chan.remove(ws)
+        if len(chan.connections) == 0:
+            channels.pop(match_id)
