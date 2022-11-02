@@ -32,9 +32,6 @@ class MatchType(str, Enum):
     public = "public"
 
 
-query_base = select((m, r) for m in Match for r in m.plays)
-
-
 def match_to_dict(match: Match) -> Dict[str, Any]:
     robots = []
     for robot in match.plays:
@@ -56,6 +53,7 @@ def match_to_dict(match: Match) -> Dict[str, Any]:
         "robots": robots,
         "is_private": False,
         "state": match.state,
+        "results": None,
     }
 
 
@@ -69,27 +67,27 @@ def get_matches(match_type: MatchType, token: str = Header()):
             raise HTTPException(status_code=404, detail="User not found")
 
         queries: Dict = {
-            MatchType.created: query_base.filter(
-                lambda m, _: m.state == "Lobby" and m.host is cur_user
+            MatchType.created: Match.select().filter(
+                lambda m: m.state == "Lobby" and m.host is cur_user
             ),
-            MatchType.started: query_base.filter(
-                lambda m, r: (m.state == "InGame" or m.state == "Finished")
-                and r.owner is cur_user
+            MatchType.started: Match.select().filter(
+                lambda m: (m.state == "InGame" or m.state == "Finished")
+                and cur_user in m.plays.owner
             ),
-            MatchType.joined: query_base.filter(
-                lambda m, r: m.state == "Lobby"
-                and r.owner is cur_user
+            MatchType.joined: Match.select().filter(
+                lambda m: m.state == "Lobby"
+                and cur_user in m.plays.owner
                 and m.host is not cur_user
             ),
-            MatchType.public: query_base.filter(
-                lambda m, _: m.state == "Lobby" and m.host is not cur_user
+            MatchType.public: Match.select().filter(
+                lambda m: m.state == "Lobby" and m.host is not cur_user
             ),
         }
 
         queried_matches = queries[match_type][:]
 
         matches = []
-        for m, _ in queried_matches:
+        for m in queried_matches:
             robots = []
             for r in m.plays:
                 r_avatar = get_robot_avatar(r)
@@ -177,7 +175,8 @@ def get_match(match_id: int, token: str = Header()):
             results = [
                 RobotResult(
                     robot_id=r.robot_id, robot_pos=r.position, death_count=r.death_count
-                ) for r in robot_results
+                )
+                for r in robot_results
             ]
 
         host_avatar_url = get_user_avatar(m.host)
@@ -192,7 +191,7 @@ def get_match(match_id: int, token: str = Header()):
             is_private=False,
             robots=robots,
             state=m.state,
-            results=results
+            results=results,
         )
 
 
@@ -302,12 +301,8 @@ def start_match(match_id: int, token: str = Header()):
         m.state = "Finished"
         commit()
 
-        match = match_to_dict(m)
-
-        chan = channels.get(match_id)
-
-        if chan:
-            asyncio.run(chan.push(match))
+        match["state"] = "Finished"
+        match["results"] = []
 
         def get_condition(robot_id, dictionary):
             condition = "Lost"
@@ -332,8 +327,21 @@ def start_match(match_id: int, token: str = Header()):
                 death_count=deaths_count[r],
                 condition=get_condition(r, result_match),
             )
+            match["results"].append(
+                {
+                    "robot_id": r,
+                    "position": ordered_result_match.index(r) + 1,
+                    "death_count": deaths_count[r],
+                }
+            )
 
         commit()
+
+        chan = channels.get(match_id)
+
+        if chan:
+            asyncio.run(chan.push(match))
+
     return {}
 
 

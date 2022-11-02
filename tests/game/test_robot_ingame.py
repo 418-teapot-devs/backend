@@ -104,7 +104,7 @@ def test_bot_scan():
         (100, 500),
         (500, 400),
     ]
-    others = [NoMove(i, i+1, pos) for i, pos in enumerate(positions)]
+    others = [NoMove(i, i + 1, pos) for i, pos in enumerate(positions)]
 
     r._scan([r._pos for r in others])
     assert r.scanned() == math.inf

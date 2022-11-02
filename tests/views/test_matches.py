@@ -619,6 +619,10 @@ def test_join_match():
         robot["name"] == robot_in_match["name"] for robot_in_match in data["robots"]
     )
 
+    response = cl.get("/matches/?match_type=public", headers=tok_header)
+    data = response.json()
+    assert len(data) == len(set(m["id"] for m in data))
+
 
 def test_join_matches_replacing_robot():
     users = register_random_users(2)
