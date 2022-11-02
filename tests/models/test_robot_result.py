@@ -1,6 +1,6 @@
 from pony.orm import db_session
 
-from app.models import Robot, User, Match, RobotMatchResult, db
+from app.models import Match, Robot, RobotMatchResult, User, db
 
 
 @db_session
@@ -38,10 +38,16 @@ def test_result_model():
     )
     assert Match.exists(name="partida1")
 
-    result_1 = RobotMatchResult(robot_id=1, match_id=1, position=2, death_count= 3, condition="Lost" )
+    result_1 = RobotMatchResult(
+        robot_id=1, match_id=1, position=2, death_count=3, condition="Lost"
+    )
 
-    result_2 = RobotMatchResult(robot_id=2, match_id=1, position=1, death_count= 0, condition="Won" )
+    result_2 = RobotMatchResult(
+        robot_id=2, match_id=1, position=1, death_count=0, condition="Won"
+    )
 
-    assert RobotMatchResult.exists(robot_id=1,match_id=1) and RobotMatchResult.exists(robot_id=2,match_id=1)
+    assert RobotMatchResult.exists(robot_id=1, match_id=1) and RobotMatchResult.exists(
+        robot_id=2, match_id=1
+    )
 
     db.rollback()
