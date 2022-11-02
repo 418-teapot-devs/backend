@@ -26,7 +26,7 @@ def simulate(schema: SimulationRequest, token: str = Header()):
         if cur_user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        for bot in schema.robots:
+        for i, bot in enumerate(schema.robots):
             r = Robot.get(id=bot)
             if r is None:
                 raise HTTPException(status_code=404, detail="Robot not found")
@@ -37,7 +37,7 @@ def simulate(schema: SimulationRequest, token: str = Header()):
                 )
 
             r_avatar = get_robot_avatar(r)
-            robots[bot] = RobotInMatch(
+            robots[i] = RobotInMatch(
                 name=r.name, avatar_url=r_avatar, username=r.owner.name
             )
 

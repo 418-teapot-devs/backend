@@ -5,7 +5,7 @@ from pydantic import BaseModel, validator
 from app.schemas.match import RobotInMatch
 
 MAX_BOTS = 4
-MAX_ROUNDS = 1000
+MAX_ROUNDS = 10000
 
 
 class SimulationRequest(BaseModel):

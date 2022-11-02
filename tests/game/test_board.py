@@ -21,9 +21,14 @@ def test_board_init():
 @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 def test_game_missiles():
     b = Board(["test_id_bot"])
-    b.missiles[1] = entities.Missile(b.robots[0]._id, (2000, 2000), 2, 60)
+    b.missiles[1] = entities.Missile(b.robots[0]._board_id, (2000, 2000), 2, 60)
+
+    b.next_round()
+    assert len(b.missiles) == 1
+
     b.next_round()
     assert len(b.missiles) == 0
+
     b.missiles[2] = entities.Missile(
         345, (500 - MISSILE_D_DELTA, 500), 0, MISSILE_D_DELTA
     )
@@ -47,7 +52,7 @@ def test_game_exec():
     expected_y = [500, 500, 500, 499, 499, 501]
 
     expected = [
-        Round(robots={"test_loop_bot": RobotInRound(x=x_l, y=y_l, dmg=0)}, missiles={})
+        Round(robots={b.robots[0]._board_id: RobotInRound(x=x_l, y=y_l, dmg=0)}, missiles={})
         for x_l, y_l in zip(expected_x, expected_y)
     ]
     assert g == expected

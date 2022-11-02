@@ -54,7 +54,7 @@ def test_invalid_simulation():
 
     simulations = [
         (500, [lueme["robot_id"]] * 5),
-        (5000, [lueme["robot_id"], cesco["robot_id"]]),
+        (50000, [lueme["robot_id"], cesco["robot_id"]]),
     ]
     for s in simulations:
         response = cl.post(
@@ -123,10 +123,10 @@ def test_run_simulation():
         assert len(response.json()["rounds"]) == int(s[0]) + 1
         response_robots = response.json()["robots"]
         assert response_robots == {
-            str(r["robot_id"]): {
+            str(i): {
                 "name": r["name"],
                 "avatar_url": None,
                 "username": "annaaimeri",
             }
-            for r in s[1]
+            for i, r in enumerate(s[1])
         }

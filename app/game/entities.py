@@ -33,6 +33,10 @@ class Missile:
             delta_pos = (self._dir[0] * delta_pos, self._dir[1] * delta_pos)
             self._pos = (self._pos[0] + delta_pos[0], self._pos[1] + delta_pos[1])
 
+        if not (0 < self._pos[0] < BOARD_SZ and 0 < self._pos[1] < BOARD_SZ):
+            # force the misile to explode
+            self._dist = 0
+
     def _explode(self, robots: List["Robot"]):
         if self._dist <= 0:
             for r in robots:
@@ -46,9 +50,10 @@ class Missile:
 
 
 class Robot(abc.ABC):
-    def __init__(self, id, init_pos: Tuple[float, float]):
+    def __init__(self, id, board_id, init_pos: Tuple[float, float]):
         self._id = id
         self._pos = init_pos
+        self._board_id = board_id
         self._dmg = 0
         self._dir = 0
         self._desired_vel = 0
@@ -106,7 +111,7 @@ class Robot(abc.ABC):
         self._cannon_cooldown = CANNON_COOLDOWN
         dir, dist = self._cannon_params
         self._cannon_params = None
-        return Missile(self._id, self._pos, dir, dist)
+        return Missile(self._board_id, self._pos, dir, dist)
 
     def _move_and_check_crash(self, others: List["Robot"]):
         # Robot is dead
@@ -129,10 +134,13 @@ class Robot(abc.ABC):
                 r._dmg += COLLISION_DMG
                 self._dmg += COLLISION_DMG
         # Check for collisions against walls
-        if not (0 < self._pos[0] < BOARD_SZ and 0 < self._pos[1] < BOARD_SZ):
+        radius = ROBOT_DIAMETER / 2
+        lbound = radius
+        ubound = BOARD_SZ - radius
+        if not (lbound < self._pos[0] < ubound and lbound < self._pos[1] < ubound):
             self._pos = (
-                clamp(self._pos[0], 0, BOARD_SZ),
-                clamp(self._pos[1], 0, BOARD_SZ),
+                clamp(self._pos[0], lbound, ubound),
+                clamp(self._pos[1], lbound, ubound),
             )
             self._dmg += COLLISION_DMG
 
