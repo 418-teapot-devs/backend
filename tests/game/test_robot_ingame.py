@@ -33,9 +33,10 @@ class RoboTest(Robot):
 
 
 def test_init_bot():
-    r = RoboTest(1, (2, 3))
+    r = RoboTest(1, 0, (2, 3))
     r.initialize()
     assert r._id == 1
+    assert r._board_id == 0
     assert r.get_position() == (2, 3)
     assert r.get_direction() == 0
     assert r.get_velocity() == 0
@@ -43,7 +44,7 @@ def test_init_bot():
 
 
 def test_bot_vars():
-    r = RoboTest(1, (2, 3))
+    r = RoboTest(1, 0, (2, 3))
     r.initialize()
     r.respond()
     r._move_and_check_crash([])
@@ -53,7 +54,7 @@ def test_bot_vars():
 
 
 def test_bot_move():
-    r = RoboTest(1, (500, 500))
+    r = RoboTest(1, 0, (500, 500))
     r.initialize()
     r.respond()
     r._move_and_check_crash([])
@@ -69,8 +70,8 @@ def test_bot_move():
 
 
 def test_bot_crash():
-    r1 = RoboTest(1, (500, 500))
-    r2 = RoboTest(2, (500, 500))
+    r1 = RoboTest(1, 0, (500, 500))
+    r2 = RoboTest(2, 1, (500, 500))
     r1.initialize()
     r2.initialize()
     r1.respond()
@@ -88,7 +89,7 @@ class NoMove(Robot):
 
 
 def test_bot_wall():
-    r1 = NoMove(1, (-1, -1))
+    r1 = NoMove(1, 0, (-1, -1))
     r1.initialize()
     r1.respond()
     r1._move_and_check_crash([])
@@ -96,14 +97,14 @@ def test_bot_wall():
 
 
 def test_bot_scan():
-    r = NoMove(1, (500, 500))
+    r = NoMove(1, 0, (500, 500))
     positions = [
         (500, 750),
         (700, 500),
         (100, 500),
         (500, 400),
     ]
-    others = [NoMove(i, pos) for i, pos in enumerate(positions)]
+    others = [NoMove(i, i+1, pos) for i, pos in enumerate(positions)]
 
     r._scan([r._pos for r in others])
     assert r.scanned() == math.inf
@@ -116,7 +117,7 @@ def test_bot_scan():
 
 
 def test_bot_cannon():
-    r = NoMove(1, (404, 502))
+    r = NoMove(1, 0, (404, 502))
     m = {}
     assert r.is_cannon_ready() == True
     r.cannon(60, 300)
@@ -126,7 +127,7 @@ def test_bot_cannon():
     assert r._cannon_cooldown == CANNON_COOLDOWN
     assert len(m) == 1
     m = m[0]
-    assert m._sender == 1
+    assert m._sender == 0
     assert m._pos == (404, 502)
     assert m._dist == 300
     assert m._dir == (math.cos(math.radians(60)), math.sin(math.radians(60)))
@@ -144,6 +145,6 @@ def test_missile_explode():
     dists = [500, 510, 530, 550]
     dmgs = [NEAR_EXPLOSION_DMG, MID_EXPLOSION_DMG, FAR_EXPLOSION_DMG, 0]
     m = Missile(234, (500, 500), 0, 0)
-    robots: List[Robot] = [NoMove(i, (500, i)) for i in dists]
+    robots: List[Robot] = [NoMove(i, i, (500, i)) for i in dists]
     m._explode(robots)
     assert all(r._dmg == d for r, d in zip(robots, dmgs))

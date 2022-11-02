@@ -35,7 +35,7 @@ class Board:
             assert len(classes) == 1
             robotName = classes[0][0]
             # getattr returns a class, which we immediately initialize
-            r = getattr(module, robotName)(r_id, init_pos[i])
+            r = getattr(module, robotName)(r_id, i, init_pos[i])
             r.initialize()
             self.robots.append(r)
 
@@ -82,7 +82,7 @@ class Board:
 
     def to_round_schema(self) -> schemas.Round:
         r_summary = {
-            r._id: schemas.RobotInRound(x=r._pos[0], y=r._pos[1], dmg=r._dmg)
+            r._board_id: schemas.RobotInRound(x=r._pos[0], y=r._pos[1], dmg=r._dmg)
             for r in self.robots
         }
         m_summary = {

@@ -46,9 +46,10 @@ class Missile:
 
 
 class Robot(abc.ABC):
-    def __init__(self, id, init_pos: Tuple[float, float]):
+    def __init__(self, id, board_id, init_pos: Tuple[float, float]):
         self._id = id
         self._pos = init_pos
+        self._board_id = board_id
         self._dmg = 0
         self._dir = 0
         self._desired_vel = 0
@@ -106,7 +107,7 @@ class Robot(abc.ABC):
         self._cannon_cooldown = CANNON_COOLDOWN
         dir, dist = self._cannon_params
         self._cannon_params = None
-        return Missile(self._id, self._pos, dir, dist)
+        return Missile(self._board_id, self._pos, dir, dist)
 
     def _move_and_check_crash(self, others: List["Robot"]):
         # Robot is dead
