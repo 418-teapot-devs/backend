@@ -23,7 +23,6 @@ from app.util.room import Room
 
 router = APIRouter()
 
-
 class MatchType(str, Enum):
     created = "created"
     started = "started"
@@ -33,28 +32,6 @@ class MatchType(str, Enum):
 
 query_base = select((m, r) for m in Match for r in m.plays)
 
-def match_to_dict(match: Match) -> Dict[str, Any]:
-    robots = []
-    for robot in match.plays:
-        avatar_url = get_robot_avatar(robot)
-        robots.append(
-            {"name": robot.name, "avatar_url": avatar_url, "username": robot.owner.name}
-        )
-
-    host_avatar_url = get_user_avatar(match.host)
-
-    return {
-        "id": match.id,
-        "host": {"username": match.host.name, "avatar_url": host_avatar_url},
-        "name": match.name,
-        "max_players": match.max_players,
-        "min_players": match.min_players,
-        "games": match.game_count,
-        "rounds": match.round_count,
-        "robots": robots,
-        "is_private": False,
-        "status": match.state,
-    }
 
 def match_to_dict(match: Match) -> Dict[str, Any]:
     robots = []
@@ -76,7 +53,7 @@ def match_to_dict(match: Match) -> Dict[str, Any]:
         "rounds": match.round_count,
         "robots": robots,
         "is_private": False,
-        "status": match.state,
+        "state": match.state,
     }
 
 
@@ -298,7 +275,6 @@ def start_match(match_id: int, token: str = Header()):
                 if r not in survivors:
                     deaths_count[r] = deaths_count[r] + 1
 
-        # recordar mejorar esto (nombres y eliminar dics innecesarios)
         games_results = [x[0] for x in games_results if len(x) == 1 ]
         winners_pairs = list(zip(robots ,[games_results.count(i) for i in robots]))
         result_match = {key: value for (key, value) in winners_pairs}
@@ -319,10 +295,10 @@ def start_match(match_id: int, token: str = Header()):
             greater = {k: v > dictionary[robot_id] for k,v in dictionary.items()}
             greater.pop(robot_id)
 
-            if True not in greater.values():
+            if not any(greater.values()):
                 equal = {k: v == dictionary[robot_id] for k,v in dictionary.items()}
                 equal.pop(robot_id)
-                if True in equal.values():
+                if any(equal.values()):
                     condition = "Tied"
                 else:
                     condition = "Won"
