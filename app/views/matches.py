@@ -277,9 +277,13 @@ def start_match(match_id: int, token: str = Header()):
         m.state = "InGame"
         commit()
 
+        match = match_to_dict(m)
+
         room = rooms.get(match_id)
+
         if room:
-            rooms[match_id].event.set()
+            asyncio.run(room.broadcast(match))
+            room.event.clear()
 
         games_results = []
         robots = [r.id for r in m.plays]
@@ -304,10 +308,12 @@ def start_match(match_id: int, token: str = Header()):
         m.state = "Finished"
         commit()
 
-        if room:
-            rooms[match_id].event.set()
+        match = match_to_dict(m)
 
-        # debería mover esto de lugar??
+        if room:
+            asyncio.run(room.broadcast(match))
+            room.event.clear()
+
         def get_condition(robot_id, dictionary):
             condition = "Lost"
             greater = {k: v > dictionary[robot_id] for k,v in dictionary.items()}
@@ -332,7 +338,7 @@ def start_match(match_id: int, token: str = Header()):
                     condition = get_condition(r,result_match))
 
         commit()
-
+    return {}
 
 @router.put("/{match_id}/leave/", status_code=201)
 def leave_match(match_id: int, token: str = Header()):
