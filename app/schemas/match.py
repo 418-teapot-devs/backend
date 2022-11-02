@@ -39,3 +39,4 @@ class MatchResponse(BaseModel):
     rounds: int
     is_private: bool | None
     robots: List[RobotInMatch]
+    state: str

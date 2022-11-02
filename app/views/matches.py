@@ -5,8 +5,10 @@ from typing import Any, Dict
 from fastapi import APIRouter, Header, HTTPException, Response, WebSocket
 from pony.orm import commit, db_session, select
 
+from app.game.board import Board
 from app.models.match import Match
 from app.models.robot import Robot
+from app.models.robot_result import RobotMatchResult
 from app.models.user import User
 from app.schemas.match import (
     Host,
@@ -52,7 +54,7 @@ def match_to_dict(match: Match) -> Dict[str, Any]:
         "rounds": match.round_count,
         "robots": robots,
         "is_private": False,
-        "status": match.state,
+        "state": match.state,
     }
 
 
@@ -74,7 +76,9 @@ def get_matches(match_type: MatchType, token: str = Header()):
                 and r.owner is cur_user
             ),
             MatchType.joined: query_base.filter(
-                lambda m, r: m.state == "Lobby" and r.owner is cur_user and m.host is not cur_user
+                lambda m, r: m.state == "Lobby"
+                and r.owner is cur_user
+                and m.host is not cur_user
             ),
             MatchType.public: query_base.filter(
                 lambda m, _: m.state == "Lobby" and m.host is not cur_user
@@ -175,7 +179,7 @@ def get_match(match_id: int, token: str = Header()):
             rounds=m.round_count,
             is_private=False,
             robots=robots,
-            status=m.state,
+            state=m.state,
         )
 
 
@@ -196,7 +200,6 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
             raise HTTPException(status_code=403, detail="Match has already started")
 
         r = Robot.get(id=form.robot_id)
-
         if r is None:
             raise HTTPException(status_code=404, detail="Robot not found")
 
@@ -226,6 +229,101 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
         room.event.clear()
 
 
+@router.post("/{match_id}/start/")
+def start_match(match_id: int, token: str = Header()):
+    username = get_current_user(token)
+
+    with db_session:
+        if User.get(name=username) is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        m = Match.get(id=match_id)
+
+        if m is None:
+            raise HTTPException(status_code=404, detail="Match not found")
+
+        if m.state != "Lobby":
+            raise HTTPException(status_code=403, detail="Match has already started")
+
+        if m.host != User.get(name=username):
+            raise HTTPException(status_code=403, detail="Host must start the match")
+
+        if len(m.plays) < m.min_players:
+            raise HTTPException(
+                status_code=403, detail="The minimum number of players was not reached"
+            )
+
+        if len(m.plays) > m.max_players:
+            raise HTTPException(status_code=403, detail="Match is full")
+
+        m.state = "InGame"
+        commit()
+
+        match = match_to_dict(m)
+
+        room = rooms.get(match_id)
+
+        if room:
+            asyncio.run(room.broadcast(match))
+            room.event.clear()
+
+        games_results = []
+        robots = [r.id for r in m.plays]
+        for _ in range(m.game_count):
+            b = Board(robots)
+            games_results.append(b.execute_game(m.round_count))
+
+        deaths_count = {key: 0 for key in robots}
+        for survivors in games_results:
+            for r in robots:
+                if r not in survivors:
+                    deaths_count[r] = deaths_count[r] + 1
+
+        games_results = [x[0] for x in games_results if len(x) == 1]
+        winners_pairs = list(zip(robots, [games_results.count(i) for i in robots]))
+        result_match = {key: value for (key, value) in winners_pairs}
+        result_match = {
+            k: v for k, v in sorted(result_match.items(), key=lambda item: item[1])
+        }
+        ordered_result_match = list(reversed(result_match.keys()))
+
+        m.state = "Finished"
+        commit()
+
+        match = match_to_dict(m)
+
+        if room:
+            asyncio.run(room.broadcast(match))
+            room.event.clear()
+
+        def get_condition(robot_id, dictionary):
+            condition = "Lost"
+            greater = {k: v > dictionary[robot_id] for k, v in dictionary.items()}
+            greater.pop(robot_id)
+
+            if not any(greater.values()):
+                equal = {k: v == dictionary[robot_id] for k, v in dictionary.items()}
+                equal.pop(robot_id)
+                if any(equal.values()):
+                    condition = "Tied"
+                else:
+                    condition = "Won"
+
+            return condition
+
+        for r in robots:
+            RobotMatchResult(
+                robot_id=r,
+                match_id=match_id,
+                position=ordered_result_match.index(r) + 1,
+                death_count=deaths_count[r],
+                condition=get_condition(r, result_match),
+            )
+
+        commit()
+    return {}
+
+
 @router.put("/{match_id}/leave/", status_code=201)
 def leave_match(match_id: int, token: str = Header()):
     username = get_current_user(token)
@@ -242,9 +340,7 @@ def leave_match(match_id: int, token: str = Header()):
         if m.state != "Lobby":
             raise HTTPException(status_code=403, detail="Match has already started")
 
-        robot_from_owner = m.plays.select(
-            lambda robot: robot.owner.name == username
-        )
+        robot_from_owner = m.plays.select(lambda robot: robot.owner.name == username)
 
         if not robot_from_owner:
             raise HTTPException(status_code=403, detail="User was not in match")

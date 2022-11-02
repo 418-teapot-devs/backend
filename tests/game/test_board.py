@@ -51,3 +51,14 @@ def test_game_exec():
         for x_l, y_l in zip(expected_x, expected_y)
     ]
     assert g == expected
+
+
+@mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
+def test_game_execute():
+    b = Board(["test_id_bot", "test_aggressive_bot"])
+    g = [b.to_round_schema()]
+
+    expected_winners = ["test_aggressive_bot"]
+    winners = b.execute_game(1000)
+
+    assert expected_winners == winners
