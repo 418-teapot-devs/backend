@@ -74,7 +74,7 @@ def get_matches(match_type: MatchType, token: str = Header()):
                 and r.owner is cur_user
             ),
             MatchType.joined: query_base.filter(
-                lambda m, r: m.state == "Lobby" and r.owner is cur_user
+                lambda m, r: m.state == "Lobby" and r.owner is cur_user and m.host is not cur_user
             ),
             MatchType.public: query_base.filter(
                 lambda m, _: m.state == "Lobby" and m.host is not cur_user
