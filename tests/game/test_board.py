@@ -22,8 +22,13 @@ def test_board_init():
 def test_game_missiles():
     b = Board(["test_id_bot"])
     b.missiles[1] = entities.Missile(b.robots[0]._board_id, (2000, 2000), 2, 60)
+
+    b.next_round()
+    assert len(b.missiles) == 1
+
     b.next_round()
     assert len(b.missiles) == 0
+
     b.missiles[2] = entities.Missile(
         345, (500 - MISSILE_D_DELTA, 500), 0, MISSILE_D_DELTA
     )

@@ -53,11 +53,7 @@ class Board:
         self.missiles = {k: m for k, m in self.missiles.items() if m._dist > 0}
         for m in self.missiles.values():
             m._advance()
-        self.missiles = {
-            k: m
-            for k, m in self.missiles.items()
-            if 0 < m._pos[0] < BOARD_SZ and 0 < m._pos[1] < BOARD_SZ
-        }
+
         for m in self.missiles.values():
             m._explode(self.robots)
 
