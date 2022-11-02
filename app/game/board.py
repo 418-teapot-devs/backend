@@ -67,6 +67,19 @@ class Board:
         # Clean up dead robots
         self.robots = [r for r in self.robots if r._dmg < MAX_DMG]
 
+    def execute_game(self, rounds: int):
+        winner = []
+
+        for _ in range(rounds):
+            self.next_round()
+
+            if len(self.robots) <= 1:
+                break
+
+        winner = list(map(lambda x: x._id, self.robots))
+
+        return winner
+
     def to_round_schema(self) -> schemas.Round:
         r_summary = {
             r._id: schemas.RobotInRound(x=r._pos[0], y=r._pos[1], dmg=r._dmg)

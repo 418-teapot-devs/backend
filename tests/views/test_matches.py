@@ -4,7 +4,6 @@ from fastapi.testclient import TestClient
 from pony.orm import commit, db_session
 
 from app.main import app
-from app.models.match import Match
 from app.util.auth import create_access_token
 from tests.testutil import (
     create_random_matches,
@@ -13,6 +12,10 @@ from tests.testutil import (
     random_ascii_string,
     register_random_users,
 )
+
+from app.models import Robot, User, Match, RobotMatchResult, db
+
+from time import sleep
 
 cl = TestClient(app)
 
@@ -64,7 +67,6 @@ def test_get_nonexistent_match():
 
     response = cl.get("/matches/1", headers={"token": token})
     assert response.status_code == 404
-
 
 def test_created_invalid_match():
     users = [
@@ -744,3 +746,103 @@ def test_leave_match():
     data = response.json()
     assert str(data["id"]) == match["id"]
     assert all(robot["name"] != robot_in_match["name"] for robot_in_match in data["robots"])
+
+
+@db_session
+def test_start_match():
+    users = [
+        {
+            "username": "alvaro2",
+            "password": "MILC(man,i love ceimaf)123",
+            "email": "a2@gemail.com",
+        },
+        {
+            "username": "bruno2",
+            "password": "h0la soy del Monse",
+            "email": "b2@gemail.com",
+        },
+        {"username": "leo2", "password": "Burrito21", "email": "l2@gemail.com"},
+    ]
+
+    tokens = {}
+    for user in users:
+        response = cl.post(f"/users/{json_to_queryparams(user)}")
+        assert response.status_code == 201
+        data = response.json()
+
+        tokens[user["username"]] = data["token"]
+
+    test_robots = [
+        ("daneel R olivaw", tokens["leo2"], "tests/assets/robots/code/test_id_bot.py", None, 201),
+        ("R giskard", tokens["leo2"], "tests/assets/robots/code/test_id_bot.py", None, 201),
+        ("Marvin", tokens["bruno2"], "tests/assets/robots/code/test_id_bot.py", None, 201),
+        ("deep thought", tokens["alvaro2"], "tests/assets/robots/code/test_id_bot.py", None, 201),
+    ]
+
+    for robot_name, token, code, avatar, expected_code in test_robots:
+        code_file = open(code)
+        response = cl.post(
+            f"/robots/?name={robot_name}",
+            headers={"token": token},
+            files=[("code", code_file)],
+        )
+        code_file.close()
+
+        assert response.status_code == expected_code
+
+    matches = [
+        (
+            tokens["bruno2"],
+            "partida1",
+            3,
+            2,
+            4,
+            10000,
+            200,
+            "algo",
+            201,
+        )
+    ]
+
+    for (
+        token,
+        m_name,
+        robot_id,
+        min_p,
+        max_p,
+        games,
+        rounds,
+        password,
+        expected_code,
+    ) in matches:
+        response = cl.post(
+            "/matches/",
+            headers={"token": token},
+            json={
+                "name": m_name,
+                "robot_id": robot_id,
+                "max_players": max_p,
+                "min_players": min_p,
+                "rounds": rounds,
+                "games": games,
+                "password": password,
+            },
+        )
+
+        assert response.status_code == expected_code
+
+    m = Match.get(id=1)
+
+    m.plays.add(Robot.get(id=1))
+    commit()
+
+    response = cl.post("/matches/1/start/", headers={"token": tokens["bruno2"]})
+    sleep(2)
+
+    assert response.status_code==200
+
+    assert RobotMatchResult.exists(robot_id=3, match_id=1)
+    assert RobotMatchResult.exists(robot_id=1, match_id=1)
+
+    m = Match.get(id=1)
+    #assert m.state == "Finished"
