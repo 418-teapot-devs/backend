@@ -1,13 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from jose import jwt
 from passlib.context import CryptContext
 from pony.orm import commit, db_session
 
-from core.models.user import User
-from core.schemas.user import Login, Register, Token
-from views import JWT_ALGORITHM, JWT_SECRET_KEY
+from app.models.user import User
+from app.schemas.user import Login, LoginResponse, Register, Token, UserProfile
+from app.util.assets import ASSETS_DIR, get_user_avatar
+from app.util.auth import create_access_token
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
@@ -17,17 +17,7 @@ password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter()
 
 
-def create_access_token(data: dict, expires_delta: timedelta):
-    to_encode = data.copy()
-
-    expire = datetime.utcnow() + expires_delta
-
-    to_encode.update({"exp": expire})
-
-    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-
-
-@router.post("/", response_model=Token)
+@router.post("/", response_model=Token, status_code=201)
 def register(schema: Register = Depends(), avatar: UploadFile | None = None):
     if avatar and avatar.content_type != "image/png":
         raise HTTPException(status_code=422, detail="invalid picture format")
@@ -37,7 +27,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         if User.exists(name=schema.username):
             err.append("Username was taken!")
 
-        if User.exists(e_mail=schema.e_mail):
+        if User.exists(email=schema.email):
             err.append("E-Mail was taken!")
 
         if len(err) > 0:
@@ -45,13 +35,13 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
 
         # store avatar to disk
         if avatar:
-            with open(f"app/assets/users/{schema.username}.png", "wb") as f:
+            with open(f"{ASSETS_DIR}/users/{schema.username}.png", "wb") as f:
                 f.write(avatar.file.read())
 
         user = User(
             name=schema.username,
             password=password_context.hash(schema.password),
-            e_mail=schema.e_mail,
+            email=schema.email,
             has_avatar=avatar is not None,
         )
         commit()
@@ -71,7 +61,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         return Token(token=login_token)
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=LoginResponse)
 def login(form_data: Login):
     with db_session:
         user = User.get(name=form_data.username)
@@ -85,4 +75,8 @@ def login(form_data: Login):
         token_data = {"sub": "login", "username": user.name}
         token = create_access_token(token_data, timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS))
 
-        return Token(token=token)
+    profile = UserProfile(
+        username=user.name, email=user.email, avatar_url=get_user_avatar(user)
+    )
+
+    return LoginResponse(token=token, profile=profile)

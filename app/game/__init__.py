@@ -1,0 +1,25 @@
+from app.util.assets import ASSETS_MODULE
+
+ROBOT_MODULE = f"{ASSETS_MODULE}.robots.code"
+
+# Physics
+FPS = 30
+DELTA_TIME = 1 / FPS
+DELTA_VEL = 5  # 1% of maximum velocity
+ACC_FACTOR = 10  # TODO: express in terms of DELTA_TIME as (m/s^2)
+
+MISSILE_VEL = 100 * DELTA_VEL
+MISSILE_D_DELTA = MISSILE_VEL * DELTA_TIME
+
+# Damage
+MAX_DMG = 100
+COLLISION_DMG = 2
+FAR_EXPLOSION_DMG = 3
+MID_EXPLOSION_DMG = 5
+NEAR_EXPLOSION_DMG = 10
+
+# Robot things
+CANNON_COOLDOWN = 10
+ROBOT_DIAMETER = 20
+
+BOARD_SZ = 1000
