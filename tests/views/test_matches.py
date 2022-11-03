@@ -311,7 +311,7 @@ def test_get_created():
             4,
             10000,
             200,
-            "algo",
+            "",
             201,
         ),
         (
@@ -333,7 +333,7 @@ def test_get_created():
             4,
             5000,
             100,
-            "algo",
+            "",
             201,
         ),
         (
@@ -400,7 +400,7 @@ def test_get_created():
             4,
             8540,
             2,
-            False,
+            True,
             {"2": {"name": "R giskard", "avatar_url": None, "username": "leo2"}},
             "Lobby",
             None,

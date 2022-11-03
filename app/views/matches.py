@@ -60,7 +60,7 @@ def match_to_dict(match: Match) -> Dict[str, Any]:
         "games": match.game_count,
         "rounds": match.round_count,
         "robots": robots,
-        "is_private": False,
+        "is_private": match.password != "",
         "state": match.state,
         "results": results,
     }
@@ -115,7 +115,7 @@ def get_matches(match_type: MatchType, token: str = Header()):
                     games=m.game_count,
                     rounds=m.round_count,
                     state=m.state,
-                    is_private=False,
+                    is_private=m.password != "",
                     robots=robots,
                     results=None,
                 )
@@ -195,7 +195,7 @@ def get_match(match_id: int, token: str = Header()):
             min_players=m.min_players,
             games=m.game_count,
             rounds=m.round_count,
-            is_private=False,
+            is_private=m.password != "",
             robots=robots,
             state=m.state,
             results=results,
