@@ -47,7 +47,7 @@ def match_to_dict(match: Match) -> Dict[str, Any]:
         results = {}
         for r in match.plays:
             res = RobotMatchResult.get(match_id=match.id, robot_id=r.id)
-            results[r.id] = RobotResult(robot_pos=res.position, death_count=death_count)
+            results[r.id] = RobotResult(robot_pos=res.position, death_count=res.death_count)
 
     return {
         "id": match.id,
