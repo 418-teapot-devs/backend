@@ -31,6 +31,7 @@ class RobotInMatch(BaseModel):
 
 class RobotResult(BaseModel):
     robot_id: int
+    robot_name: str
     robot_pos: int
     death_count: int
 

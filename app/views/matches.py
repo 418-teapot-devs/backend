@@ -174,7 +174,10 @@ def get_match(match_id: int, token: str = Header()):
             )
             results = [
                 RobotResult(
-                    robot_id=r.robot_id, robot_pos=r.position, death_count=r.death_count
+                    robot_name=Robot[r.robot_id].name,
+                    robot_id=r.robot_id,
+                    robot_pos=r.position,
+                    death_count=r.death_count,
                 )
                 for r in robot_results
             ]
