@@ -241,7 +241,7 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
         asyncio.run(chan.push(match))
 
 
-@router.post("/{match_id}/start/")
+@router.put("/{match_id}/start/", status_code=201)
 def start_match(match_id: int, token: str = Header()):
     username = get_current_user(token)
 
@@ -341,8 +341,6 @@ def start_match(match_id: int, token: str = Header()):
 
         if chan:
             asyncio.run(chan.push(match))
-
-    return {}
 
 
 @router.put("/{match_id}/leave/", status_code=201)

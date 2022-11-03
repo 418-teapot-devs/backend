@@ -790,7 +790,6 @@ def test_start_match():
     }
 
     response = cl.post("/matches/", headers=tok_header, json=json_header)
-
     assert response.status_code == 201
 
     with db_session:
@@ -798,10 +797,11 @@ def test_start_match():
         m.plays.add(Robot.get(id=robots[1]["id"]))
         commit()
 
-    response = cl.post(f"/matches/1/start/", headers=tok_header)
-    sleep(2)
+    response = cl.put("/matches/1/start/", headers=tok_header)
 
-    assert response.status_code == 200
+    sleep(2)
+    assert response.status_code == 201
+
     with db_session:
         assert RobotMatchResult.exists(robot_id=robots[0]["id"], match_id=1)
         assert RobotMatchResult.exists(robot_id=robots[1]["id"], match_id=1)
@@ -816,17 +816,16 @@ def test_start_nonexistant_user():
         {"sub": "login", "username": "leo"}, timedelta(hours=1.0)
     )
 
-    response = cl.post("/matches/1/start/", headers={"token": fake_token})
+    response = cl.put("/matches/1/start/", headers={"token": fake_token})
     assert response.status_code == 404
 
 
 def test_start_nonexistant_match():
     user = register_random_users(1)[0]
-    robot = create_random_robots(user["token"], 1)[0]
 
     tok_header = {"token": user["token"]}
 
-    response = cl.post("/matches/1/start/", headers=tok_header)
+    response = cl.put("/matches/1/start/", headers=tok_header)
     assert response.status_code == 404
 
     data = response.json()
@@ -837,9 +836,6 @@ def test_start_match_already_started():
     users = register_random_users(2)
     match = create_random_matches(users[0]["token"], 1)[0]
 
-    # for second user
-    robot = create_random_robots(users[1]["token"], 1)[0]
-
     with db_session:
         m = Match[match["id"]]
         m.state = "InGame"
@@ -847,7 +843,7 @@ def test_start_match_already_started():
 
     tok_header = {"token": users[1]["token"]}
 
-    response = cl.post(f"/matches/{match['id']}/start/", headers=tok_header)
+    response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
     assert response.status_code == 403
 
     data = response.json()
@@ -856,13 +852,12 @@ def test_start_match_already_started():
 
 def test_start_match_unowned_robot():
     users = register_random_users(2)
-    robot = create_random_robots(users[0]["token"], 1)[0]
     match = create_random_matches(users[0]["token"], 1)[0]
 
     # robot id from first user, token from second
     tok_header = {"token": users[1]["token"]}
 
-    response = cl.post(f"/matches/{match['id']}/start/", headers=tok_header)
+    response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
     assert response.status_code == 403
 
     data = response.json()
@@ -885,7 +880,7 @@ def test_start_match_maximum():
 
     tok_header = {"token": users[0]["token"]}
 
-    response = cl.post(f"/matches/{match['id']}/start/", headers=tok_header)
+    response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
     assert response.status_code == 403
 
     data = response.json()
@@ -896,12 +891,9 @@ def test_start_match_minimum():
     users = register_random_users(1)
     match = create_random_matches(users[0]["token"], 1)[0]
 
-    # for second user
-    robots = create_random_robots(users[0]["token"], 1)
-
     tok_header = {"token": users[0]["token"]}
 
-    response = cl.post(f"/matches/{match['id']}/start/", headers=tok_header)
+    response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
     assert response.status_code == 403
 
     data = response.json()
