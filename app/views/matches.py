@@ -33,12 +33,10 @@ class MatchType(str, Enum):
 
 
 def match_to_dict(match: Match) -> Dict[str, Any]:
-    robots = []
+    robots = {}
     for robot in match.plays:
         avatar_url = get_robot_avatar(robot)
-        robots.append(
-            {"id": robot.id, "name": robot.name, "avatar_url": avatar_url, "username": robot.owner.name}
-        )
+        robots[robot.id] = {"name": robot.name, "avatar_url": avatar_url, "username": robot.owner.name}
 
     host_avatar_url = get_user_avatar(match.host)
 
