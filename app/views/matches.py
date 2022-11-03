@@ -36,7 +36,11 @@ def match_to_dict(match: Match) -> Dict[str, Any]:
     robots = {}
     for robot in match.plays:
         avatar_url = get_robot_avatar(robot)
-        robots[robot.id] = {"name": robot.name, "avatar_url": avatar_url, "username": robot.owner.name}
+        robots[robot.id] = {
+            "name": robot.name,
+            "avatar_url": avatar_url,
+            "username": robot.owner.name,
+        }
 
     host_avatar_url = get_user_avatar(match.host)
 
@@ -45,7 +49,7 @@ def match_to_dict(match: Match) -> Dict[str, Any]:
         results = {}
         for r in match.plays:
             res = RobotMatchResult.get(match_id=match.id, robot_id=r.id)
-            results[r.id] = {"robot_pos":res.position, "death_count":res.death_count}
+            results[r.id] = {"robot_pos": res.position, "death_count": res.death_count}
 
     return {
         "id": match.id,
@@ -97,9 +101,8 @@ def get_matches(match_type: MatchType, token: str = Header()):
             for r in m.plays:
                 r_avatar = get_robot_avatar(r)
                 robots[r.id] = RobotInMatch(
-                        name=r.name, avatar_url=r_avatar, username=r.owner.name
-                    )
-
+                    name=r.name, avatar_url=r_avatar, username=r.owner.name
+                )
 
             h_avatar = get_user_avatar(m.host)
             matches.append(
@@ -114,7 +117,7 @@ def get_matches(match_type: MatchType, token: str = Header()):
                     state=m.state,
                     is_private=False,
                     robots=robots,
-                    results=None
+                    results=None,
                 )
             )
 
@@ -167,8 +170,8 @@ def get_match(match_id: int, token: str = Header()):
         for r in m.plays:
             r_avatar_url = get_robot_avatar(r)
             robots[r.id] = RobotInMatch(
-                    name=r.name, avatar_url=r_avatar_url, username=r.owner.name
-                )
+                name=r.name, avatar_url=r_avatar_url, username=r.owner.name
+            )
 
         results = None
         if m.state == "Finished":
@@ -176,8 +179,7 @@ def get_match(match_id: int, token: str = Header()):
                 r for r in RobotMatchResult if r.match_id == match_id
             )
             results = {
-                r.robot_id:
-                RobotResult(
+                r.robot_id: RobotResult(
                     robot_pos=r.position,
                     death_count=r.death_count,
                 )
