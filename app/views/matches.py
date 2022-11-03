@@ -33,14 +33,23 @@ class MatchType(str, Enum):
 
 
 def match_to_dict(match: Match) -> Dict[str, Any]:
-    robots = []
+    robots = {}
     for robot in match.plays:
         avatar_url = get_robot_avatar(robot)
-        robots.append(
-            {"name": robot.name, "avatar_url": avatar_url, "username": robot.owner.name}
-        )
+        robots[robot.id] = {
+            "name": robot.name,
+            "avatar_url": avatar_url,
+            "username": robot.owner.name,
+        }
 
     host_avatar_url = get_user_avatar(match.host)
+
+    results = None
+    if match.state == "Finished":
+        results = {}
+        for r in match.plays:
+            res = RobotMatchResult.get(match_id=match.id, robot_id=r.id)
+            results[r.id] = {"robot_pos": res.position, "death_count": res.death_count}
 
     return {
         "id": match.id,
@@ -53,7 +62,7 @@ def match_to_dict(match: Match) -> Dict[str, Any]:
         "robots": robots,
         "is_private": False,
         "state": match.state,
-        "results": None,
+        "results": results,
     }
 
 
@@ -88,13 +97,11 @@ def get_matches(match_type: MatchType, token: str = Header()):
 
         matches = []
         for m in queried_matches:
-            robots = []
+            robots = {}
             for r in m.plays:
                 r_avatar = get_robot_avatar(r)
-                robots.append(
-                    RobotInMatch(
-                        name=r.name, avatar_url=r_avatar, username=r.owner.name
-                    )
+                robots[r.id] = RobotInMatch(
+                    name=r.name, avatar_url=r_avatar, username=r.owner.name
                 )
 
             h_avatar = get_user_avatar(m.host)
@@ -110,6 +117,7 @@ def get_matches(match_type: MatchType, token: str = Header()):
                     state=m.state,
                     is_private=False,
                     robots=robots,
+                    results=None,
                 )
             )
 
@@ -148,7 +156,7 @@ def create_match(form_data: MatchCreateRequest, token: str = Header()):
     return Response(status_code=201)
 
 
-@router.get("/{match_id}")
+@router.get("/{match_id}/")
 def get_match(match_id: int, token: str = Header()):
     get_current_user(token)
 
@@ -158,13 +166,11 @@ def get_match(match_id: int, token: str = Header()):
         if m is None:
             raise HTTPException(status_code=404, detail="Match not found")
 
-        robots = []
+        robots = {}
         for r in m.plays:
             r_avatar_url = get_robot_avatar(r)
-            robots.append(
-                RobotInMatch(
-                    name=r.name, avatar_url=r_avatar_url, username=r.owner.name
-                )
+            robots[r.id] = RobotInMatch(
+                name=r.name, avatar_url=r_avatar_url, username=r.owner.name
             )
 
         results = None
@@ -172,12 +178,13 @@ def get_match(match_id: int, token: str = Header()):
             robot_results = select(
                 r for r in RobotMatchResult if r.match_id == match_id
             )
-            results = [
-                RobotResult(
-                    robot_id=r.robot_id, robot_pos=r.position, death_count=r.death_count
+            results = {
+                r.robot_id: RobotResult(
+                    robot_pos=r.position,
+                    death_count=r.death_count,
                 )
                 for r in robot_results
-            ]
+            }
 
         host_avatar_url = get_user_avatar(m.host)
         return MatchResponse(

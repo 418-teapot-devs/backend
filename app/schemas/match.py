@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -30,7 +30,6 @@ class RobotInMatch(BaseModel):
 
 
 class RobotResult(BaseModel):
-    robot_id: int
     robot_pos: int
     death_count: int
 
@@ -44,6 +43,6 @@ class MatchResponse(BaseModel):
     games: int
     rounds: int
     is_private: bool
-    robots: List[RobotInMatch]
+    robots: Dict[int, RobotInMatch]
     state: str
-    results: List[RobotResult] | None
+    results: Dict[int, RobotResult] | None

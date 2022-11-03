@@ -387,7 +387,7 @@ def test_get_created():
             10000,
             200,
             False,
-            [{"name": "Marvin", "avatar_url": None, "username": "bruno2"}],
+            {"3": {"name": "Marvin", "avatar_url": None, "username": "bruno2"}},
             "Lobby",
             None,
         ),
@@ -401,7 +401,7 @@ def test_get_created():
             8540,
             2,
             False,
-            [{"name": "R giskard", "avatar_url": None, "username": "leo2"}],
+            {"2": {"name": "R giskard", "avatar_url": None, "username": "leo2"}},
             "Lobby",
             None,
         ),
@@ -616,7 +616,8 @@ def test_join_match():
     data = response.json()
     assert str(data["id"]) == match["id"]
     assert any(
-        robot["name"] == robot_in_match["name"] for robot_in_match in data["robots"]
+        robot["name"] == robot_in_match["name"]
+        for robot_in_match in data["robots"].values()
     )
 
     response = cl.get("/matches/?match_type=public", headers=tok_header)
@@ -644,7 +645,8 @@ def test_join_matches_replacing_robot():
     data = response.json()
     assert str(data["id"]) == match["id"]
     assert any(
-        robot["name"] == robot_in_match["name"] for robot_in_match in data["robots"]
+        robot["name"] == robot_in_match["name"]
+        for robot_in_match in data["robots"].values()
     )
 
     # joining with a new robot must replace the old one
@@ -664,9 +666,10 @@ def test_join_matches_replacing_robot():
     data = response.json()
     assert str(data["id"]) == match["id"]
     assert all(
-        robot["name"] != robot_in_match["name"] for robot_in_match in data["robots"]
+        robot["name"] != robot_in_match["name"]
+        for robot_in_match in data["robots"].values()
     )
-    assert any(new_robot["name"] == robot["name"] for robot in data["robots"])
+    assert any(new_robot["name"] == robot["name"] for robot in data["robots"].values())
 
 
 def test_leave_nonexistant_match():
@@ -753,7 +756,8 @@ def test_leave_match():
     data = response.json()
     assert str(data["id"]) == match["id"]
     assert any(
-        robot["name"] == robot_in_match["name"] for robot_in_match in data["robots"]
+        robot["name"] == robot_in_match["name"]
+        for robot_in_match in data["robots"].values()
     )
 
     response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
@@ -765,7 +769,8 @@ def test_leave_match():
     data = response.json()
     assert str(data["id"]) == match["id"]
     assert all(
-        robot["name"] != robot_in_match["name"] for robot_in_match in data["robots"]
+        robot["name"] != robot_in_match["name"]
+        for robot_in_match in data["robots"].values()
     )
 
 
