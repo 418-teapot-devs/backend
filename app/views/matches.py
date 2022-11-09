@@ -21,6 +21,7 @@ from app.schemas.match import (
 from app.util.assets import get_robot_avatar, get_user_avatar
 from app.util.auth import get_current_user
 from app.util.ws import Notifier
+from app.util.status_codes import *
 
 router = APIRouter()
 
@@ -73,7 +74,7 @@ def get_matches(match_type: MatchType, token: str = Header()):
     with db_session:
         cur_user = User.get(name=username)
         if cur_user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise USER_NOT_FOUND_ERROR
 
         queries: Dict = {
             MatchType.created: Match.select().filter(
@@ -132,13 +133,16 @@ def create_match(form_data: MatchCreateRequest, token: str = Header()):
         host = User.get(name=username)
 
         if host is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise USER_NOT_FOUND_ERROR
 
         host_robot = Robot.get(id=form_data.robot_id)
         if host_robot is None:
-            raise HTTPException(status_code=404, detail="Robot not found")
+            raise ROBOT_NOT_FOUND_ERROR
+
         if host_robot.owner is not host:
-            raise HTTPException(status_code=401, detail="Robot does not belong to user")
+            raise HTTPException(
+                status_code=401, detail="Robot does not belong to user"
+            )
 
         Match(
             host=host,
@@ -164,7 +168,7 @@ def get_match(match_id: int, token: str = Header()):
         m = Match.get(id=match_id)
 
         if m is None:
-            raise HTTPException(status_code=404, detail="Match not found")
+            raise MATCH_NOT_FOUND_ERROR
 
         robots = {}
         for r in m.plays:
@@ -213,26 +217,26 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
         m = Match.get(id=match_id)
 
         if m is None:
-            raise HTTPException(status_code=404, detail="Match not found")
+            raise MATCH_NOT_FOUND_ERROR
 
         if m.state != "Lobby":
-            raise HTTPException(status_code=403, detail="Match has already started")
+            raise MATCH_STARTED_ERROR
 
         r = Robot.get(id=form.robot_id)
         if r is None:
-            raise HTTPException(status_code=404, detail="Robot not found")
+            raise ROBOT_NOT_FOUND_ERROR
 
         if r.owner.name != username:
-            raise HTTPException(status_code=403, detail="Robot does not belong to user")
+            raise ROBOT_NOT_FROM_USER_ERROR
 
         robot_from_owner = m.plays.select(
             lambda robot: r.owner.name == robot.owner.name
         )
         if m.plays.count() >= m.max_players and not robot_from_owner:
-            raise HTTPException(status_code=403, detail="Match is full")
+            raise MATCH_FULL_ERROR
 
         if m.password and form.password != m.password:
-            raise HTTPException(status_code=403, detail="Match password is incorrect")
+            raise MATCH_PASSWORD_INCORRECT_ERROR
 
         if robot_from_owner:
             m.plays.remove(robot_from_owner)
@@ -254,26 +258,24 @@ def start_match(match_id: int, token: str = Header()):
 
     with db_session:
         if User.get(name=username) is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise USER_NOT_FOUND_ERROR
 
         m = Match.get(id=match_id)
 
         if m is None:
-            raise HTTPException(status_code=404, detail="Match not found")
+            raise MATCH_NOT_FOUND_ERROR
 
         if m.state != "Lobby":
-            raise HTTPException(status_code=403, detail="Match has already started")
+            raise MATCH_STARTED_ERROR
 
         if m.host != User.get(name=username):
-            raise HTTPException(status_code=403, detail="Host must start the match")
+            raise MATCH_CAN_ONLY_BE_STARTED_BY_HOST_ERROR
 
         if len(m.plays) < m.min_players:
-            raise HTTPException(
-                status_code=403, detail="The minimum number of players was not reached"
-            )
+            raise MATCH_MINIMUM_PLAYERS_NOT_REACHED_ERROR
 
         if len(m.plays) > m.max_players:
-            raise HTTPException(status_code=403, detail="Match is full")
+            raise MATCH_FULL_ERROR
 
         m.state = "InGame"
         commit()
@@ -358,18 +360,18 @@ def leave_match(match_id: int, token: str = Header()):
         m = Match.get(id=match_id)
 
         if m is None:
-            raise HTTPException(status_code=404, detail="Match not found")
+            raise MATCH_NOT_FOUND_ERROR
 
         if m.host.name == username:
-            raise HTTPException(status_code=403, detail="Host cannot leave own match")
+            raise MATCH_CANNOT_BE_LEFT_BY_HOST_ERROR
 
         if m.state != "Lobby":
-            raise HTTPException(status_code=403, detail="Match has already started")
+            raise MATCH_STARTED_ERROR
 
         robot_from_owner = m.plays.select(lambda robot: robot.owner.name == username)
 
         if not robot_from_owner:
-            raise HTTPException(status_code=403, detail="User was not in match")
+            raise USER_WAS_NOT_IN_MATCH_ERROR
 
         m.plays.remove(robot_from_owner)
         match = match_to_dict(m)

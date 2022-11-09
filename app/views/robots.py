@@ -6,6 +6,7 @@ from app.models.user import User
 from app.schemas.robot import RobotResponse
 from app.util.assets import ASSETS_DIR, get_robot_avatar
 from app.util.auth import get_current_user
+from app.util.status_codes import *
 
 router = APIRouter()
 
@@ -38,7 +39,7 @@ def create_robot(
 
         user = User.get(name=username)
         if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise USER_NOT_FOUND_ERROR
 
         if Robot.exists(owner=user, name=name):
             raise HTTPException(

@@ -1,0 +1,38 @@
+`app/views/matches.py`
+1.
+    endpoint: post /matches/
+    - Robot does not belong to the user es 401 en línea 143 pero 403 en 228
+    + Acordar en uno, para mi debería ser 403 para ser consistente con otros
+
+2.
+    endpoint: put /matches/{match_id}/start/
+    - La descripción de error es "Host must start the match" en la línea 270
+    + Cambiarla a "Only host can start the match"
+
+`app/views/users.py`
+1.
+    endpoint: post /users/
+    - El error "invalid picture format" es el único error que empieza en minúscula
+    + Hacer que empiece en mayúscula
+
+    - Los errores que van en una lista son los únicos que terminan con signo de admiración
+    + Sacar signo de admiración
+
+2.
+    endpoint: post /users/login
+    - El error "username not found!" empieza en minúscula y termina con !, también es una falla de seguridad
+    - Lo mismo con "passwords don't match!"
+    + Hacer que las 2 cosas tiren el error "Non existant user or password is incorrect" con 401 (como estaba antes)
+
+`app/views/robots.py`
+1.
+    endpoint: post /robots/
+    - El error tiene contexto y no puede ser una constante
+    + Cambiar el error a "Robot with same name already exists for user"
+
+`app/views/simulate.py`
+1.
+    endpoint: post /simulate/
+    - El error "robot requested is not owned by {username}" empieza en minúscula y tiene contexto
+    + Cambiarlo por el error que ya existe "Robot does not belong to user" con 403 (como estaba antes)
+
