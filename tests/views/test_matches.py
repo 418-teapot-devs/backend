@@ -5,13 +5,13 @@ from fastapi.testclient import TestClient
 from pony.orm import commit, db_session
 
 from app.main import app
-from app.models import Match, Robot, RobotMatchResult, User, db
+from app.models import Match, Robot, RobotMatchResult
 from app.util.auth import create_access_token
+from app.util.status_codes import *
 from tests.testutil import (
     create_random_matches,
     create_random_robots,
     json_to_queryparams,
-    random_ascii_string,
     register_random_users,
 )
 
@@ -34,7 +34,7 @@ def test_create_from_nonexistant_user():
     }
 
     response = cl.post("/matches/", headers={"token": fake_token}, json=test_match)
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
 
 def test_get_from_nonexistant_user():
@@ -43,7 +43,7 @@ def test_get_from_nonexistant_user():
     )
 
     response = cl.get("/matches/1", headers={"token": fake_token})
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
 
 def test_get_with_qp_from_nonexistant_user():
@@ -52,7 +52,7 @@ def test_get_with_qp_from_nonexistant_user():
     )
 
     response = cl.get("/matches/?match_type=created", headers={"token": fake_token})
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
 
 def test_get_nonexistent_match():
@@ -64,7 +64,7 @@ def test_get_nonexistent_match():
     token = response.json()["token"]
 
     response = cl.get("/matches/1", headers={"token": token})
-    assert response.status_code == 404
+    assert response.status_code == MATCH_NOT_FOUND_ERROR.status_code
 
 
 def test_created_invalid_match():
@@ -455,10 +455,10 @@ def test_join_nonexistant_match():
     tok_header = {"token": user["token"]}
 
     response = cl.put("/matches/1/join/", headers=tok_header, json=json_form)
-    assert response.status_code == 404
+    assert response.status_code == MATCH_NOT_FOUND_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match not found"
+    assert data["detail"] == MATCH_NOT_FOUND_ERROR.detail
 
 
 def test_join_match_nonexistant_robot():
@@ -471,10 +471,10 @@ def test_join_match_nonexistant_robot():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 404
+    assert response.status_code == ROBOT_NOT_FOUND_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Robot not found"
+    assert data["detail"] == ROBOT_NOT_FOUND_ERROR.detail
 
 
 def test_join_match_unowned_robot():
@@ -489,10 +489,10 @@ def test_join_match_unowned_robot():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 403
+    assert response.status_code == ROBOT_NOT_FROM_USER_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Robot does not belong to user"
+    assert data["detail"] == ROBOT_NOT_FROM_USER_ERROR.detail
 
 
 def test_join_match_already_started():
@@ -513,10 +513,10 @@ def test_join_match_already_started():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 403
+    assert response.status_code == MATCH_STARTED_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match has already started"
+    assert data["detail"] == MATCH_STARTED_ERROR.detail
 
 
 def test_join_full_match():
@@ -543,10 +543,10 @@ def test_join_full_match():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 403
+    assert response.status_code == MATCH_FULL_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match is full"
+    assert data["detail"] == MATCH_FULL_ERROR.detail
 
 
 def test_join_match_invalid_password():
@@ -561,10 +561,10 @@ def test_join_match_invalid_password():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 403
+    assert response.status_code == MATCH_PASSWORD_INCORRECT_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match password is incorrect"
+    assert data["detail"] == MATCH_PASSWORD_INCORRECT_ERROR.detail
 
 
 def test_join_matches_empty_password():
@@ -678,10 +678,10 @@ def test_leave_nonexistant_match():
     tok_header = {"token": user["token"]}
 
     response = cl.put("/matches/1/leave/", headers=tok_header)
-    assert response.status_code == 404
+    assert response.status_code == MATCH_NOT_FOUND_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match not found"
+    assert data["detail"] == MATCH_NOT_FOUND_ERROR.detail
 
 
 def test_leave_not_joined_match():
@@ -691,10 +691,10 @@ def test_leave_not_joined_match():
     tok_header = {"token": users[1]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == USER_WAS_NOT_IN_MATCH_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "User was not in match"
+    assert data["detail"] == USER_WAS_NOT_IN_MATCH_ERROR.detail
 
 
 def test_leave_match_from_host():
@@ -704,10 +704,10 @@ def test_leave_match_from_host():
     tok_header = {"token": user["token"]}
 
     response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_CANNOT_BE_LEFT_BY_HOST_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Host cannot leave own match"
+    assert data["detail"] == MATCH_CANNOT_BE_LEFT_BY_HOST_ERROR.detail
 
 
 def test_leave_started_match():
@@ -730,10 +730,10 @@ def test_leave_started_match():
         commit()
 
     response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_STARTED_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match has already started"
+    assert data["detail"] == MATCH_STARTED_ERROR.detail
 
 
 def test_leave_match():
@@ -822,7 +822,7 @@ def test_start_nonexistant_user():
     )
 
     response = cl.put("/matches/1/start/", headers={"token": fake_token})
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
 
 def test_start_nonexistant_match():
@@ -831,10 +831,10 @@ def test_start_nonexistant_match():
     tok_header = {"token": user["token"]}
 
     response = cl.put("/matches/1/start/", headers=tok_header)
-    assert response.status_code == 404
+    assert response.status_code == MATCH_NOT_FOUND_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match not found"
+    assert data["detail"] == MATCH_NOT_FOUND_ERROR.detail
 
 
 def test_start_match_already_started():
@@ -849,10 +849,10 @@ def test_start_match_already_started():
     tok_header = {"token": users[1]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_STARTED_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match has already started"
+    assert data["detail"] == MATCH_STARTED_ERROR.detail
 
 
 def test_start_match_unowned_robot():
@@ -863,10 +863,10 @@ def test_start_match_unowned_robot():
     tok_header = {"token": users[1]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_CAN_ONLY_BE_STARTED_BY_HOST_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Host must start the match"
+    assert data["detail"] == MATCH_CAN_ONLY_BE_STARTED_BY_HOST_ERROR.detail
 
 
 def test_start_match_maximum():
@@ -886,10 +886,10 @@ def test_start_match_maximum():
     tok_header = {"token": users[0]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_FULL_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match is full"
+    assert data["detail"] == MATCH_FULL_ERROR.detail
 
 
 def test_start_match_minimum():
@@ -899,7 +899,7 @@ def test_start_match_minimum():
     tok_header = {"token": users[0]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_MINIMUM_PLAYERS_NOT_REACHED_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "The minimum number of players was not reached"
+    assert data["detail"] == MATCH_MINIMUM_PLAYERS_NOT_REACHED_ERROR.detail
