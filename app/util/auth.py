@@ -33,17 +33,15 @@ def get_current_user(token: str):
 
 
 def get_user_and_subject(token: str):
-    invalid_token_exception = HTTPException(status_code=401, detail="Invalid token")
-
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         username = payload.get("username")
         subject = payload.get("sub")
 
         if username is None or subject is None:
-            raise invalid_token_exception
+            raise INVALID_TOKEN_EXCEPTION
 
     except JWTError:
-        raise invalid_token_exception
+        raise INVALID_TOKEN_EXCEPTION
 
     return [username, subject]
