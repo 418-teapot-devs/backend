@@ -14,12 +14,12 @@ from app.schemas.user import (
     UserProfile,
 )
 from app.util.assets import ASSETS_DIR, get_user_avatar
-from app.util.auth import create_access_token, get_current_user
+from app.util.auth import create_access_token, get_current_user, get_user_and_subject
+from app.util.mail import send_verification_token
 from app.util.errors import *
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
-from views.util import mail
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -60,8 +60,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
             timedelta(days=VERIFY_TOKEN_EXPIRE_DAYS),
         )
 
-        if "pytest" not in sys.modules:
-            mail.send_verification_token(user.e_mail, verify_token)
+        send_verification_token(user.email, verify_token)
 
         login_token = create_access_token(
             {"sub": "login", "username": user.name},
@@ -78,6 +77,9 @@ def login(form_data: Login):
 
         if not user:
             raise HTTPException(status_code=401, detail="username not found!")
+
+        if not user.is_verified:
+            raise HTTPException(status_code=403, detail="user is not verified")
 
         if not password_context.verify(form_data.password, user.password):
             raise HTTPException(status_code=401, detail="passwords don't match!")
@@ -149,31 +151,24 @@ def change_password(form_data: ChangePassWord, token: str = Header()):
         commit()
 
 
-@router.get("/confirm", response_model=Token)
-def confirm(token: str):
-    try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        username = payload.get("username")
-        subject = payload.get("sub")
+@router.get("/verify/", response_model=Token)
+def verify(token: str):
+    username, subject = get_user_and_subject(token)
 
-        if not username or not subject:
-            raise HTTPException(status_code=401, detail="invalid token")
+    if subject != "verify":
+        raise HTTPException(status_code=403, detail="attempt to verify with login token")
 
-        if subject != "verify":
-            raise HTTPException(status_code=403, detail="attempt to verify with login token")
+    with db_session:
+        user = User.get(name=username)
 
-        with db_session:
-            user = User.get(name=username)
+        if not user:
+            raise HTTPException(status_code=404, detail="user does not exist")
 
-            if not user:
-                raise HTTPException(status_code=404, detail="user does not exist")
+        user.is_verified = True
 
-            user.is_verified = True
+    token = create_access_token(
+        {"sub": "login", "username": user.name},
+        timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS)
+    )
 
-        token_data = {"sub": "login", "username": user.name}
-        token = create_access_token(token_data, timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS))
-
-        return Token(token=token)
-
-    except JWTError:
-        raise HTTPException(status_code=401, detail="invalid token")
+    return Token(token=token)
