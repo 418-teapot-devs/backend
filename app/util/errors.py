@@ -57,6 +57,10 @@ INVALID_PICTURE_FORMAT_ERROR = HTTPException(
     status_code=422, detail="invalid picture format"
 )
 
+INVALID_TOKEN_EXCEPTION = HTTPException(
+    status_code=401, detail="Invalid token"
+)
+
 NON_EXISTANT_USER_OR_PASSWORD_ERROR = HTTPException(
     status_code=401, detail="Non existant user or password is incorrect"
 )

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
-from fastapi import HTTPException
 from jose import JWTError, jwt
+from app.util.errors import INVALID_TOKEN_EXCEPTION
 
 JWT_SECRET_KEY = "92294169bb3637efe9a56293025e8d463089d43f8f1bd1e78c67c8e197a7ef1e"
 JWT_ALGORITHM = "HS256"
@@ -18,16 +18,14 @@ def create_access_token(data: dict, expires_delta: timedelta):
 
 
 def get_current_user(token: str):
-    invalid_token_exception = HTTPException(status_code=401, detail="Invalid token")
-
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         username = payload.get("username")
 
         if username is None:
-            raise invalid_token_exception
+            raise INVALID_TOKEN_EXCEPTION
 
     except JWTError:
-        raise invalid_token_exception
+        raise INVALID_TOKEN_EXCEPTION
 
     return username

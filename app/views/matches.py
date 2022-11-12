@@ -21,7 +21,7 @@ from app.schemas.match import (
 from app.util.assets import get_robot_avatar, get_user_avatar
 from app.util.auth import get_current_user
 from app.util.ws import Notifier
-from app.util.status_codes import *
+from app.util.errors import *
 
 router = APIRouter()
 
