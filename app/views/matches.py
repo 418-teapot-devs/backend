@@ -14,8 +14,8 @@ from app.models.user import User
 from app.schemas.match import MatchCreateRequest, MatchJoinRequest
 from app.util.auth import get_current_user
 from app.util.db_access import match_id_to_schema
-from app.util.errors import *
 from app.util.ws import Notifier
+from app.util.errors import *
 
 router = APIRouter()
 

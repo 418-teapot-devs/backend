@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from jose import JWTError, jwt
+from app.util.errors import INVALID_TOKEN_EXCEPTION
 
 from app.util.errors import INVALID_TOKEN_EXCEPTION
 
