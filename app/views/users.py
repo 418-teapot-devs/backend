@@ -72,11 +72,11 @@ def login(form_data: Login):
         if not password_context.verify(form_data.password, user.password):
             raise HTTPException(status_code=401, detail="passwords don't match!")
 
-        token_data = {"sub": "login", "username": user.name}
-        token = create_access_token(token_data, timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS))
+        profile = UserProfile(
+            username=user.name, email=user.email, avatar_url=get_user_avatar(user)
+        )
 
-    profile = UserProfile(
-        username=user.name, email=user.email, avatar_url=get_user_avatar(user)
-    )
+    token_data = {"sub": "login", "username": form_data.username}
+    token = create_access_token(token_data, timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS))
 
     return LoginResponse(token=token, profile=profile)

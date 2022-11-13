@@ -6,6 +6,7 @@ from app.models.user import User
 from app.schemas.robot import RobotResponse
 from app.util.assets import ASSETS_DIR, get_robot_avatar
 from app.util.auth import get_current_user
+from app.util.errors import *
 
 router = APIRouter()
 
@@ -22,8 +23,9 @@ def get_robot(token: str = Header()):
                     robot_id=robot.id,
                     name=robot.name,
                     avatar_url=get_robot_avatar(robot),
-                    win_rate=0,
-                    mmr=0,
+                    played_matches=robot.played_matches,
+                    won_matches=robot.won_matches,
+                    mmr=robot.mmr,
                 )
             )
     return robots
@@ -33,12 +35,13 @@ def get_robot(token: str = Header()):
 def create_robot(
     name: str, code: UploadFile, avatar: UploadFile | None = None, token: str = Header()
 ):
+    username = get_current_user(token)
+
     with db_session:
-        username = get_current_user(token)
 
         user = User.get(name=username)
         if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise USER_NOT_FOUND_ERROR
 
         if Robot.exists(owner=user, name=name):
             raise HTTPException(
@@ -49,11 +52,11 @@ def create_robot(
         robot = Robot(owner=user, name=name, has_avatar=avatar is not None)
         commit()
 
-        with open(f"{ASSETS_DIR}/robots/code/{robot.id}.py", "wb") as f:
-            f.write(code.file.read())
+    with open(f"{ASSETS_DIR}/robots/code/{robot.id}.py", "wb") as f:
+        f.write(code.file.read())
 
-        if avatar:
-            with open(f"{ASSETS_DIR}/robots/avatars/{robot.id}.png", "wb") as f:
-                f.write(avatar.file.read())
+    if avatar:
+        with open(f"{ASSETS_DIR}/robots/avatars/{robot.id}.png", "wb") as f:
+            f.write(avatar.file.read())
 
     return Response(status_code=201)

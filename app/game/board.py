@@ -1,5 +1,3 @@
-import importlib
-import inspect
 import math
 import random
 from typing import List, Tuple
@@ -22,20 +20,14 @@ def generate_init_positions(n: int) -> List[Tuple[float, float]]:
 
 
 class Board:
-    def __init__(self, robot_ids: List):
+    def __init__(self, robot_classes: List):
         self.robots = []
         self.missiles = {}
         self.cur_missile = 0
 
-        init_pos = generate_init_positions(len(robot_ids))
-        for i, r_id in enumerate(robot_ids):
-            module = importlib.import_module(f".{r_id}", ROBOT_MODULE)
-            classes = inspect.getmembers(module, inspect.isclass)
-            classes = list(filter(lambda c: c[0] != "Robot", classes))
-            assert len(classes) == 1
-            robotName = classes[0][0]
-            # getattr returns a class, which we immediately initialize
-            r = getattr(module, robotName)(r_id, i, init_pos[i])
+        init_pos = generate_init_positions(len(robot_classes))
+        for i, (r_id, rc) in enumerate(robot_classes):
+            r = rc(r_id, i, init_pos[i])
             r.initialize()
             self.robots.append(r)
 
@@ -62,19 +54,6 @@ class Board:
             self.robots[i]._move_and_check_crash(self.robots[:i])
         # Clean up dead robots
         self.robots = [r for r in self.robots if r._dmg < MAX_DMG]
-
-    def execute_game(self, rounds: int):
-        winner = []
-
-        for _ in range(rounds):
-            self.next_round()
-
-            if len(self.robots) <= 1:
-                break
-
-        winner = list(map(lambda x: x._id, self.robots))
-
-        return winner
 
     def to_round_schema(self) -> schemas.Round:
         r_summary = {
