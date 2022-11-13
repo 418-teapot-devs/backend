@@ -221,21 +221,6 @@ def start_match(match_id: int, token: str = Header()):
         m.state = "Finished"
         commit()
 
-    def get_condition(robot_id, dictionary):
-        condition = "Lost"
-        greater = {k: v > dictionary[robot_id] for k, v in dictionary.items()}
-        greater.pop(robot_id)
-
-        if not any(greater.values()):
-            equal = {k: v == dictionary[robot_id] for k, v in dictionary.items()}
-            equal.pop(robot_id)
-            if any(equal.values()):
-                condition = "Tied"
-            else:
-                condition = "Won"
-
-        return condition
-
     for r in robots:
         with db_session:
             RobotMatchResult(
@@ -243,7 +228,7 @@ def start_match(match_id: int, token: str = Header()):
                 match_id=match_id,
                 position=ordered_result_match.index(r) + 1,
                 death_count=deaths_count[r],
-                condition=get_condition(r, result_match),
+
             )
             commit()
 

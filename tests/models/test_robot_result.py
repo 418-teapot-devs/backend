@@ -39,11 +39,11 @@ def test_result_model():
     assert Match.exists(name="partida1")
 
     result_1 = RobotMatchResult(
-        robot_id=1, match_id=1, position=2, death_count=3, condition="Lost"
+        robot_id=1, match_id=1, position=2, death_count=3
     )
 
     result_2 = RobotMatchResult(
-        robot_id=2, match_id=1, position=1, death_count=0, condition="Won"
+        robot_id=2, match_id=1, position=1, death_count=0
     )
 
     assert RobotMatchResult.exists(robot_id=1, match_id=1) and RobotMatchResult.exists(
