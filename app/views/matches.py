@@ -6,11 +6,12 @@ from fastapi import APIRouter, Header, HTTPException, Response, WebSocket
 from pony.orm import commit, db_session, select
 
 from app.game.board import Board
+from app.game.executor import Executor
 from app.models.match import Match
 from app.models.robot import Robot
 from app.models.robot_result import RobotMatchResult
 from app.models.user import User
-from app.schemas.match import MatchCreateRequest, MatchJoinRequest, RobotResult
+from app.schemas.match import MatchCreateRequest, MatchJoinRequest
 from app.util.auth import get_current_user
 from app.util.db_access import match_id_to_schema
 from app.util.status_codes import *
@@ -193,28 +194,16 @@ def start_match(match_id: int, token: str = Header()):
         match = match_id_to_schema(match_id)
         asyncio.run(chan.push(match.json()))
 
-    games_results = []
     with db_session:
         m = Match.get(id=match_id)
         robots = [r.id for r in m.plays]
         game_count, round_count = m.game_count, m.round_count
+
+    exec = Executor(robots)
     for _ in range(game_count):
-        b = Board(robots)
-        games_results.append(b.execute_game(round_count))
+        exec.execute_game(round_count)
 
-    deaths_count = {key: 0 for key in robots}
-    for survivors in games_results:
-        for r in robots:
-            if r not in survivors:
-                deaths_count[r] = deaths_count[r] + 1
-
-    games_results = [x[0] for x in games_results if len(x) == 1]
-    winners_pairs = list(zip(robots, [games_results.count(i) for i in robots]))
-    result_match = {key: value for (key, value) in winners_pairs}
-    result_match = {
-        k: v for k, v in sorted(result_match.items(), key=lambda item: item[1])
-    }
-    ordered_result_match = list(reversed(result_match.keys()))
+    robots_by_pos, death_counts = exec.generate_stats()
 
     with db_session:
         m = Match.get(id=match_id)
@@ -226,9 +215,8 @@ def start_match(match_id: int, token: str = Header()):
             RobotMatchResult(
                 robot_id=r,
                 match_id=match_id,
-                position=ordered_result_match.index(r) + 1,
-                death_count=deaths_count[r],
-
+                position=robots_by_pos.index(r) + 1,
+                death_count=death_counts[r],
             )
             commit()
 

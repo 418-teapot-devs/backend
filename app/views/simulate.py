@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Header, HTTPException
 from pony.orm import db_session
 
-from app.game.board import Board
+from app.game.executor import Executor
 from app.models.robot import Robot
 from app.models.user import User
 from app.schemas.match import RobotInMatch
@@ -44,12 +44,5 @@ def simulate(schema: SimulationRequest, token: str = Header()):
 
     rounds = schema.rounds if schema.rounds is not None else DEFAULT_ROUNDS
 
-    b = Board(schema.robots)
-    g = [b.to_round_schema()]
-    for _ in range(rounds):
-        b.next_round()
-        g.append(b.to_round_schema())
-        if len(b.robots) == 0 and len(b.missiles) == 0:
-            break
-
-    return SimulationResponse(robots=robots, rounds=g)
+    exec = Executor(schema.robots)
+    return SimulationResponse(robots=robots, rounds=exec.simulate(rounds))
