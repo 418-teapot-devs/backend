@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from jose import JWTError, jwt
+
 from app.util.errors import INVALID_TOKEN_EXCEPTION
 
 JWT_SECRET_KEY = "92294169bb3637efe9a56293025e8d463089d43f8f1bd1e78c67c8e197a7ef1e"

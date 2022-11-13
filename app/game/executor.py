@@ -1,7 +1,8 @@
 import importlib
 import inspect
-from app.game import *
 from typing import List
+
+from app.game import *
 from app.game.board import Board
 
 
@@ -54,20 +55,12 @@ class Executor:
 
     def generate_stats(self):
         positions = sorted(
-            self.won_games,
-            key=lambda r: self.won_games[r],
-            reverse=True
+            self.won_games, key=lambda r: self.won_games[r], reverse=True
         )
 
         # Offset all death counts by number of games played
         # We didn't know the offset before the games were executed
         death_counts = {
-            k: self.games_execd - v
-            for (k, v) in self.survived_games.items()
+            k: self.games_execd - v for (k, v) in self.survived_games.items()
         }
         return (positions, death_counts)
-
-
-
-
-

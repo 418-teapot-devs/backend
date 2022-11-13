@@ -3,9 +3,9 @@ from unittest import mock
 from app.game import BOARD_SZ, entities
 from app.game.board import *
 from app.schemas.simulation import RobotInRound, Round
-
 from tests.assets.robots.code.test_id_bot import IdBot
 from tests.assets.robots.code.test_loop_bot import LoopBot
+
 
 def test_init_positions():
     for i in [1, 5, 10, 50]:
