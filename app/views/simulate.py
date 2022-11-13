@@ -8,7 +8,7 @@ from app.schemas.match import RobotInMatch
 from app.schemas.simulation import SimulationRequest, SimulationResponse
 from app.util.assets import ASSETS_DIR, get_robot_avatar
 from app.util.auth import get_current_user
-from app.util.status_codes import *
+from app.util.errors import *
 
 DEFAULT_ROUNDS = 100
 BOT_DIR = f"{ASSETS_DIR}/robots"

@@ -5,7 +5,6 @@ from typing import Dict
 from fastapi import APIRouter, Header, HTTPException, Response, WebSocket
 from pony.orm import commit, db_session, select
 
-from app.game.board import Board
 from app.game.executor import Executor
 from app.models.match import Match
 from app.models.robot import Robot
@@ -14,8 +13,8 @@ from app.models.user import User
 from app.schemas.match import MatchCreateRequest, MatchJoinRequest
 from app.util.auth import get_current_user
 from app.util.db_access import match_id_to_schema
-from app.util.status_codes import *
 from app.util.ws import Notifier
+from app.util.errors import *
 
 router = APIRouter()
 

@@ -4,7 +4,7 @@ from app.models.match import Match
 from app.models.robot_result import RobotMatchResult
 from app.schemas.match import Host, MatchResponse, RobotInMatch, RobotResult
 from app.util.assets import get_robot_avatar, get_user_avatar
-from app.util.status_codes import MATCH_NOT_FOUND_ERROR
+from app.util.errors import MATCH_NOT_FOUND_ERROR
 
 
 def match_id_to_schema(match_id: int):

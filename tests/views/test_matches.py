@@ -7,7 +7,7 @@ from pony.orm import commit, db_session
 from app.main import app
 from app.models import Match, Robot, RobotMatchResult
 from app.util.auth import create_access_token
-from app.util.status_codes import *
+from app.util.errors import *
 from tests.testutil import (
     create_random_matches,
     create_random_robots,

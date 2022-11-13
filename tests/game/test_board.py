@@ -44,7 +44,7 @@ def test_game_missiles():
 
 @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 def test_game_exec():
-    b = Board([{1, LoopBot}])
+    b = Board([(1, LoopBot)])
     g = [b.to_round_schema()]
     for _ in range(5):
         b.next_round()
