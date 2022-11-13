@@ -23,14 +23,18 @@ def get_robot(token: str = Header()):
 
         robots = []
         for robot in select(r for r in Robot if r.owner.name == username):
+            won_matches = robot.won_matches
+            played_matches = robot.played_matches
+            mmr = 30 * played_matches - 10 * won_matches
+
             robots.append(
                 RobotResponse(
                     robot_id=robot.id,
                     name=robot.name,
                     avatar_url=get_robot_avatar(robot),
-                    played_matches=robot.played_matches,
-                    won_matches=robot.won_matches,
-                    mmr=robot.mmr,
+                    played_matches=played_matches,
+                    won_matches=won_matches,
+                    mmr=mmr,
                 )
             )
     return robots
