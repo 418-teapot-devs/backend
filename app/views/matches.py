@@ -221,6 +221,7 @@ def start_match(match_id: int, token: str = Header()):
 
     with db_session:
         Robot[robots_by_pos[0]].won_matches += 1
+        commit()
 
     # Notify websockets
     chan = channels.get(match_id)
