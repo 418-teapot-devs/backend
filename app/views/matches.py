@@ -2,7 +2,7 @@ import asyncio
 from enum import Enum
 from typing import Dict
 
-from fastapi import APIRouter, Header, HTTPException, Response, WebSocket
+from fastapi import APIRouter, Header, HTTPException, WebSocket
 from pony.orm import commit, db_session, select
 
 from app.game.executor import Executor
@@ -66,7 +66,7 @@ def get_matches(match_type: MatchType, token: str = Header()):
     return matches
 
 
-@router.post("/")
+@router.post("/", status_code=201)
 def create_match(form_data: MatchCreateRequest, token: str = Header()):
     username = get_current_user(token)
 
@@ -95,8 +95,6 @@ def create_match(form_data: MatchCreateRequest, token: str = Header()):
             password=form_data.password,
         )
         commit()
-
-    return Response(status_code=201)
 
 
 @router.get("/{match_id}/")
