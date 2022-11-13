@@ -12,6 +12,6 @@ class Robot(db.Entity):
     has_avatar = Required(bool, default=False)
     played_matches = Required(int, default=0)
     won_matches = Required(int, default=0)
-    lost_matches = Required(int, default=0)
+    mmr = Required(int, default=0)
     matches_in = Set("Match", reverse="plays")
     composite_key(owner, name)

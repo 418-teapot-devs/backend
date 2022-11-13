@@ -23,8 +23,9 @@ def get_robot(token: str = Header()):
                     robot_id=robot.id,
                     name=robot.name,
                     avatar_url=get_robot_avatar(robot),
-                    win_rate=0,
-                    mmr=0,
+                    played_matches=robot.played_matches,
+                    won_matches=robot.won_matches,
+                    mmr=robot.mmr,
                 )
             )
     return robots

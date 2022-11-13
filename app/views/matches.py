@@ -195,10 +195,10 @@ def start_match(match_id: int, token: str = Header()):
 
     with db_session:
         m = Match.get(id=match_id)
-        robots = [r.id for r in m.plays]
+        robot_ids = [r.id for r in m.plays]
         game_count, round_count = m.game_count, m.round_count
 
-    exec = Executor(robots)
+    exec = Executor(robot_ids)
     for _ in range(game_count):
         exec.execute_game(round_count)
 
@@ -209,15 +209,20 @@ def start_match(match_id: int, token: str = Header()):
         m.state = "Finished"
         commit()
 
-    for r in robots:
+    for rid in robot_ids:
         with db_session:
             RobotMatchResult(
-                robot_id=r,
+                robot_id=rid,
                 match_id=match_id,
-                position=robots_by_pos.index(r) + 1,
-                death_count=death_counts[r],
+                position=robots_by_pos.index(rid) + 1,
+                death_count=death_counts[rid],
             )
+            r = Robot[rid]
+            r.played_matches += 1
             commit()
+
+    with db_session:
+        Robot[robots_by_pos[0]].won_matches += 1
 
     # Notify websockets
     chan = channels.get(match_id)
