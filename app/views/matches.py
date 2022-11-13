@@ -1,6 +1,6 @@
 import asyncio
 from enum import Enum
-from typing import Any, Dict
+from typing import Dict
 
 from fastapi import APIRouter, Header, HTTPException, Response, WebSocket
 from pony.orm import commit, db_session, select
@@ -10,18 +10,11 @@ from app.models.match import Match
 from app.models.robot import Robot
 from app.models.robot_result import RobotMatchResult
 from app.models.user import User
-from app.schemas.match import (
-    Host,
-    MatchCreateRequest,
-    MatchJoinRequest,
-    MatchResponse,
-    RobotInMatch,
-    RobotResult,
-)
-from app.util.assets import get_robot_avatar, get_user_avatar
+from app.schemas.match import MatchCreateRequest, MatchJoinRequest, RobotResult
 from app.util.auth import get_current_user
-from app.util.ws import Notifier
+from app.util.db_access import match_id_to_schema
 from app.util.status_codes import *
+from app.util.ws import Notifier
 
 router = APIRouter()
 
@@ -31,40 +24,6 @@ class MatchType(str, Enum):
     started = "started"
     joined = "joined"
     public = "public"
-
-
-def match_to_dict(match: Match) -> Dict[str, Any]:
-    robots = {}
-    for robot in match.plays:
-        avatar_url = get_robot_avatar(robot)
-        robots[robot.id] = {
-            "name": robot.name,
-            "avatar_url": avatar_url,
-            "username": robot.owner.name,
-        }
-
-    host_avatar_url = get_user_avatar(match.host)
-
-    results = None
-    if match.state == "Finished":
-        results = {}
-        for r in match.plays:
-            res = RobotMatchResult.get(match_id=match.id, robot_id=r.id)
-            results[r.id] = {"robot_pos": res.position, "death_count": res.death_count}
-
-    return {
-        "id": match.id,
-        "host": {"username": match.host.name, "avatar_url": host_avatar_url},
-        "name": match.name,
-        "max_players": match.max_players,
-        "min_players": match.min_players,
-        "games": match.game_count,
-        "rounds": match.round_count,
-        "robots": robots,
-        "is_private": match.password != "",
-        "state": match.state,
-        "results": results,
-    }
 
 
 @router.get("/")
@@ -77,20 +36,24 @@ def get_matches(match_type: MatchType, token: str = Header()):
             raise USER_NOT_FOUND_ERROR
 
         queries: Dict = {
-            MatchType.created: Match.select().filter(
-                lambda m: m.state == "Lobby" and m.host is cur_user
+            MatchType.created: select(
+                m.id for m in Match if m.state == "Lobby" and m.host is cur_user
             ),
-            MatchType.started: Match.select().filter(
-                lambda m: (m.state == "InGame" or m.state == "Finished")
+            MatchType.started: select(
+                m.id
+                for m in Match
+                if (m.state == "InGame" or m.state == "Finished")
                 and cur_user in m.plays.owner
             ),
-            MatchType.joined: Match.select().filter(
-                lambda m: m.state == "Lobby"
+            MatchType.joined: select(
+                m.id
+                for m in Match
+                if m.state == "Lobby"
                 and cur_user in m.plays.owner
                 and m.host is not cur_user
             ),
-            MatchType.public: Match.select().filter(
-                lambda m: m.state == "Lobby" and m.host is not cur_user
+            MatchType.public: select(
+                m.id for m in Match if m.state == "Lobby" and m.host is not cur_user
             ),
         }
 
@@ -98,29 +61,7 @@ def get_matches(match_type: MatchType, token: str = Header()):
 
         matches = []
         for m in queried_matches:
-            robots = {}
-            for r in m.plays:
-                r_avatar = get_robot_avatar(r)
-                robots[r.id] = RobotInMatch(
-                    name=r.name, avatar_url=r_avatar, username=r.owner.name
-                )
-
-            h_avatar = get_user_avatar(m.host)
-            matches.append(
-                MatchResponse(
-                    id=m.id,
-                    host=Host(username=m.host.name, avatar_url=h_avatar),
-                    name=m.name,
-                    max_players=m.max_players,
-                    min_players=m.min_players,
-                    games=m.game_count,
-                    rounds=m.round_count,
-                    state=m.state,
-                    is_private=m.password != "",
-                    robots=robots,
-                    results=None,
-                )
-            )
+            matches.append(match_id_to_schema(m))
 
     return matches
 
@@ -140,9 +81,7 @@ def create_match(form_data: MatchCreateRequest, token: str = Header()):
             raise ROBOT_NOT_FOUND_ERROR
 
         if host_robot.owner is not host:
-            raise HTTPException(
-                status_code=401, detail="Robot does not belong to user"
-            )
+            raise HTTPException(status_code=401, detail="Robot does not belong to user")
 
         Match(
             host=host,
@@ -165,45 +104,13 @@ def get_match(match_id: int, token: str = Header()):
     get_current_user(token)
 
     with db_session:
-        m = Match.get(id=match_id)
+        match = Match.get(id=match_id)
 
-        if m is None:
+        if match is None:
             raise MATCH_NOT_FOUND_ERROR
+        match_id = match.id
 
-        robots = {}
-        for r in m.plays:
-            r_avatar_url = get_robot_avatar(r)
-            robots[r.id] = RobotInMatch(
-                name=r.name, avatar_url=r_avatar_url, username=r.owner.name
-            )
-
-        results = None
-        if m.state == "Finished":
-            robot_results = select(
-                r for r in RobotMatchResult if r.match_id == match_id
-            )
-            results = {
-                r.robot_id: RobotResult(
-                    robot_pos=r.position,
-                    death_count=r.death_count,
-                )
-                for r in robot_results
-            }
-
-        host_avatar_url = get_user_avatar(m.host)
-        return MatchResponse(
-            id=m.id,
-            host=Host(username=m.host.name, avatar_url=host_avatar_url),
-            name=m.name,
-            max_players=m.max_players,
-            min_players=m.min_players,
-            games=m.game_count,
-            rounds=m.round_count,
-            is_private=m.password != "",
-            robots=robots,
-            state=m.state,
-            results=results,
-        )
+    return match_id_to_schema(match_id)
 
 
 channels: Dict[int, Notifier] = {}
@@ -243,13 +150,12 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
 
         m.plays.add(r)
 
-        match = match_to_dict(m)
-
+    # Notify websockets
     chan = channels.get(match_id)
 
-    # Notify websockets
     if chan:
-        asyncio.run(chan.push(match))
+        match = match_id_to_schema(match_id)
+        asyncio.run(chan.push(match.json()))
 
 
 @router.put("/{match_id}/start/", status_code=201)
@@ -280,55 +186,58 @@ def start_match(match_id: int, token: str = Header()):
         m.state = "InGame"
         commit()
 
-        match = match_to_dict(m)
+    # Notify websockets
+    chan = channels.get(match_id)
 
-        chan = channels.get(match_id)
+    if chan:
+        match = match_id_to_schema(match_id)
+        asyncio.run(chan.push(match.json()))
 
-        if chan:
-            asyncio.run(chan.push(match))
-
-        games_results = []
+    games_results = []
+    with db_session:
+        m = Match.get(id=match_id)
         robots = [r.id for r in m.plays]
-        for _ in range(m.game_count):
-            b = Board(robots)
-            games_results.append(b.execute_game(m.round_count))
+        game_count, round_count = m.game_count, m.round_count
+    for _ in range(game_count):
+        b = Board(robots)
+        games_results.append(b.execute_game(round_count))
 
-        deaths_count = {key: 0 for key in robots}
-        for survivors in games_results:
-            for r in robots:
-                if r not in survivors:
-                    deaths_count[r] = deaths_count[r] + 1
+    deaths_count = {key: 0 for key in robots}
+    for survivors in games_results:
+        for r in robots:
+            if r not in survivors:
+                deaths_count[r] = deaths_count[r] + 1
 
-        games_results = [x[0] for x in games_results if len(x) == 1]
-        winners_pairs = list(zip(robots, [games_results.count(i) for i in robots]))
-        result_match = {key: value for (key, value) in winners_pairs}
-        result_match = {
-            k: v for k, v in sorted(result_match.items(), key=lambda item: item[1])
-        }
-        ordered_result_match = list(reversed(result_match.keys()))
+    games_results = [x[0] for x in games_results if len(x) == 1]
+    winners_pairs = list(zip(robots, [games_results.count(i) for i in robots]))
+    result_match = {key: value for (key, value) in winners_pairs}
+    result_match = {
+        k: v for k, v in sorted(result_match.items(), key=lambda item: item[1])
+    }
+    ordered_result_match = list(reversed(result_match.keys()))
 
+    with db_session:
+        m = Match.get(id=match_id)
         m.state = "Finished"
         commit()
 
-        match["state"] = "Finished"
-        match["results"] = []
+    def get_condition(robot_id, dictionary):
+        condition = "Lost"
+        greater = {k: v > dictionary[robot_id] for k, v in dictionary.items()}
+        greater.pop(robot_id)
 
-        def get_condition(robot_id, dictionary):
-            condition = "Lost"
-            greater = {k: v > dictionary[robot_id] for k, v in dictionary.items()}
-            greater.pop(robot_id)
+        if not any(greater.values()):
+            equal = {k: v == dictionary[robot_id] for k, v in dictionary.items()}
+            equal.pop(robot_id)
+            if any(equal.values()):
+                condition = "Tied"
+            else:
+                condition = "Won"
 
-            if not any(greater.values()):
-                equal = {k: v == dictionary[robot_id] for k, v in dictionary.items()}
-                equal.pop(robot_id)
-                if any(equal.values()):
-                    condition = "Tied"
-                else:
-                    condition = "Won"
+        return condition
 
-            return condition
-
-        for r in robots:
+    for r in robots:
+        with db_session:
             RobotMatchResult(
                 robot_id=r,
                 match_id=match_id,
@@ -336,20 +245,14 @@ def start_match(match_id: int, token: str = Header()):
                 death_count=deaths_count[r],
                 condition=get_condition(r, result_match),
             )
-            match["results"].append(
-                {
-                    "robot_id": r,
-                    "position": ordered_result_match.index(r) + 1,
-                    "death_count": deaths_count[r],
-                }
-            )
+            commit()
 
-        commit()
+    # Notify websockets
+    chan = channels.get(match_id)
 
-        chan = channels.get(match_id)
-
-        if chan:
-            asyncio.run(chan.push(match))
+    if chan:
+        match = match_id_to_schema(match_id)
+        asyncio.run(chan.push(match))
 
 
 @router.put("/{match_id}/leave/", status_code=201)
@@ -374,36 +277,44 @@ def leave_match(match_id: int, token: str = Header()):
             raise USER_WAS_NOT_IN_MATCH_ERROR
 
         m.plays.remove(robot_from_owner)
-        match = match_to_dict(m)
-
-    chan = channels.get(match_id)
 
     # Notify websockets
+    chan = channels.get(match_id)
+
     if chan:
-        asyncio.run(chan.push(match))
+        match = match_id_to_schema(match_id)
+        asyncio.run(chan.push(match.json()))
 
 
 @router.websocket("/{match_id}/ws")
 async def websocket_endpoint(ws: WebSocket, match_id: int):  # pragma: no cover
-    chan = channels.get(match_id)
-    if not chan:
-        chan = Notifier()
-        channels[match_id] = chan
-        # Prime the push notification generator
-        await chan.generator.asend(None)
-
-    await chan.connect(ws)
 
     with db_session:
-        match = match_to_dict(Match.get(id=match_id))
+        m = Match.get(id=match_id)
+        if not m:
+            raise MATCH_NOT_FOUND_ERROR
+        m_state = m.state
 
-    await ws.send_json(match)
+    chan = channels.get(match_id)
+
+    # Only create channel if match is not finished
+    if m_state != "Finished":
+        if not chan:
+            chan = Notifier()
+            channels[match_id] = chan
+            # Prime the push notification generator
+            await chan.generator.asend(None)
+
+        await chan.connect(ws)
+
+    await ws.send_json(match_id_to_schema(match_id).json())
 
     try:
         while True:
             # only to raise exception when ws disconnects
             await ws.receive_text()
     except:
-        chan.remove(ws)
-        if len(chan.connections) == 0:
-            channels.pop(match_id)
+        if chan:
+            chan.remove(ws)
+            if len(chan.connections) == 0:
+                channels.pop(match_id)

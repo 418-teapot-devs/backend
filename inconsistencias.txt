@@ -23,6 +23,7 @@
     - El error "username not found!" empieza en minúscula y termina con !, también es una falla de seguridad
     - Lo mismo con "passwords don't match!"
     + Hacer que las 2 cosas tiren el error "Non existant user or password is incorrect" con 401 (como estaba antes)
+    - El endpoint no termina con '/'
 
 `app/views/robots.py`
 1.

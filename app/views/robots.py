@@ -34,8 +34,9 @@ def get_robot(token: str = Header()):
 def create_robot(
     name: str, code: UploadFile, avatar: UploadFile | None = None, token: str = Header()
 ):
+    username = get_current_user(token)
+
     with db_session:
-        username = get_current_user(token)
 
         user = User.get(name=username)
         if user is None:
@@ -50,11 +51,11 @@ def create_robot(
         robot = Robot(owner=user, name=name, has_avatar=avatar is not None)
         commit()
 
-        with open(f"{ASSETS_DIR}/robots/code/{robot.id}.py", "wb") as f:
-            f.write(code.file.read())
+    with open(f"{ASSETS_DIR}/robots/code/{robot.id}.py", "wb") as f:
+        f.write(code.file.read())
 
-        if avatar:
-            with open(f"{ASSETS_DIR}/robots/avatars/{robot.id}.png", "wb") as f:
-                f.write(avatar.file.read())
+    if avatar:
+        with open(f"{ASSETS_DIR}/robots/avatars/{robot.id}.png", "wb") as f:
+            f.write(avatar.file.read())
 
     return Response(status_code=201)
