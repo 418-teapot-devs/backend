@@ -3,13 +3,17 @@ from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
 from jose import jwt
+from pony.orm import commit, db_session
 
 from app.main import app
-from app.util.assets import ASSETS_DIR
+from app.models.user import User
+from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import create_access_token, JWT_ALGORITHM, JWT_SECRET_KEY
 from tests.testutil import register_random_users
 
 from os import path
+
+import filecmp
 
 cl = TestClient(app)
 
@@ -205,16 +209,32 @@ def test_patch_profile():
         },
     )
 
-    new_avatar_url = f'{ASSETS_DIR}/users/{user["username"]}.png'
+    with db_session:
+        user_db = User.get(name=user["username"])
+
+    new_avatar_url = get_user_avatar(user_db)
+
 
     assert response.status_code == 200
     assert response.json() == {"username": user["username"], "email": user["email"], "avatar_url": new_avatar_url}
-    assert path.exists(new_avatar_url)
+    assert filecmp.cmp(f'{ASSETS_DIR}/users/{user["username"]}.png', f"{ASSETS_DIR}/users/test.png")
 
 def test_invalid_put_password():
-    pass
-    # chequear validacion de contra
-    # introducir contraseña original incorrecta
+    params = json_to_queryparams(
+        {"username": "maciel", "password": "Burrito21", "email": "midulcelechona@test.com"})
+    response = cl.post(f"/users/{params}")
+    assert response.status_code == 201
+
+    data = response.json()
+    tok_header = {"token": data["token"]}
+    response = cl.put("/users/password/",headers=tok_header, json={"old_password": "estaN0Es", "new_password": "Burrito429"})
+    assert response.status_code == 401
+
+    params = json_to_queryparams(
+        {"username": "maciel", "password": "burrito", "email": "midulcelechona@test.com"})
+    response = cl.post(f"/users/{params}")
+    assert response.status_code == 422
+
 
 def test_put_password():
     params = json_to_queryparams(
