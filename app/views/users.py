@@ -127,7 +127,7 @@ def change_password(form_data: ChangePassWord, token: str = Header() ):
             raise HTTPException(status_code=404, detail="username not found!")
 
         if not password_context.verify(form_data.old_password, user.password):
-            raise HTTPException(status_code=401, detail="passwords don't match!")
+            raise HTTPException(status_code=401, detail="password don't match!")
 
         user.password=password_context.hash(form_data.new_password)
         commit()
