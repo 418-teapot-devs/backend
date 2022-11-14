@@ -46,3 +46,14 @@ class UserProfile(BaseModel):
 class LoginResponse(BaseModel):
     token: str
     profile: UserProfile
+
+class ChangePassWord(BaseModel):
+    old_password: str
+    new_password: str
+
+    @validator("new_password")
+    def password_is_correct(cls, v):
+        if not pass_validator.validate(v):
+            raise HTTPException(status_code=422, detail="value is not a valid password")
+
+        return v
