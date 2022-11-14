@@ -8,6 +8,7 @@ from app.models.user import User
 from app.schemas.user import Login, LoginResponse, Register, Token, UserProfile, ChangePassWord
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import create_access_token, get_current_user
+from app.util.errors import *
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
@@ -89,7 +90,7 @@ def get_profile(token: str = Header()):
         user = User.get(name=username)
 
         if not user:
-            raise HTTPException(status_code=404, detail="username not found!")
+            raise USER_NOT_FOUND_ERROR
 
     return UserProfile(
             username=user.name, email=user.email, avatar_url=get_user_avatar(user))
@@ -100,13 +101,13 @@ def get_profile(avatar: UploadFile, token: str = Header()):
     username = get_current_user(token)
 
     if avatar.content_type != "image/png":
-        raise HTTPException(status_code=422, detail="invalid picture format")
+        raise INVALID_PICTURE_FORMAT_ERROR
 
     with db_session:
         user = User.get(name=username)
 
         if not user:
-            raise HTTPException(status_code=404, detail="username not found!")
+            raise USER_NOT_FOUND_ERROR
 
         with open(f"{ASSETS_DIR}/users/{username}.png", "wb") as f:
             f.write(avatar.file.read())
@@ -124,10 +125,10 @@ def change_password(form_data: ChangePassWord, token: str = Header()):
         user = User.get(name=username)
 
         if not user:
-            raise HTTPException(status_code=404, detail="username not found!")
+            raise USER_NOT_FOUND_ERROR
 
         if not password_context.verify(form_data.old_password, user.password):
-            raise HTTPException(status_code=401, detail="password don't match!")
+            raise NON_EXISTANT_USER_OR_PASSWORD_ERROR
 
         user.password=password_context.hash(form_data.new_password)
         commit()

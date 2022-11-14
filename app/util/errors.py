@@ -52,3 +52,7 @@ INVALID_TOKEN_EXCEPTION = HTTPException(status_code=401, detail="Invalid token")
 NON_EXISTANT_USER_OR_PASSWORD_ERROR = HTTPException(
     status_code=401, detail="Non existant user or password is incorrect"
 )
+
+VALUE_NOT_VALID_PASSWORD =  HTTPException(
+    status_code=422, detail="value is not a valid password"
+    )

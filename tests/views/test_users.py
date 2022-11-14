@@ -9,6 +9,7 @@ from app.main import app
 from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import create_access_token, JWT_ALGORITHM, JWT_SECRET_KEY
+from app.util.errors import *
 from tests.testutil import register_random_users
 
 from os import path
@@ -166,7 +167,7 @@ def test_invalid_get_profile():
     tok_header = {"token": fake_token}
 
     response = cl.get("/users/profile/", headers=tok_header)
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
 def test_get_profile():
     user = register_random_users(1)[0]
@@ -193,7 +194,7 @@ def test_invalid_patch_profile():
             )
         },
     )
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
     user = register_random_users(1)[0]
     tok_header = {"token": user["token"]}
@@ -208,7 +209,7 @@ def test_invalid_patch_profile():
             )
         },
     )
-    assert response.status_code == 422
+    assert response.status_code == INVALID_PICTURE_FORMAT_ERROR.status_code
 
 def test_patch_profile():
     user = register_random_users(1)[0]
@@ -244,7 +245,7 @@ def test_invalid_put_password():
     tok_header = {"token": fake_token}
 
     response = cl.put("/users/password/",headers=tok_header, json={"old_password": "estaN0Es", "new_password": "Burrito429"})
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
     params = json_to_queryparams(
         {"username": "maciel", "password": "Burrito21", "email": "midulcelechona@test.com"})
@@ -254,12 +255,12 @@ def test_invalid_put_password():
     data = response.json()
     tok_header = {"token": data["token"]}
     response = cl.put("/users/password/",headers=tok_header, json={"old_password": "estaN0Es", "new_password": "Burrito429"})
-    assert response.status_code == 401
+    assert response.status_code == NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code
 
     params = json_to_queryparams(
         {"username": "maciel", "password": "burrito", "email": "midulcelechona@test.com"})
     response = cl.post(f"/users/{params}")
-    assert response.status_code == 422
+    assert response.status_code == VALUE_NOT_VALID_PASSWORD.status_code
 
 
 def test_put_password():
@@ -277,7 +278,7 @@ def test_put_password():
         "/users/login",
         json={"username": "maciel", "password": "Burrito21", "email": "midulcelechona@test.com"},
     )
-    assert response.status_code == 401
+    assert response.status_code == NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code
 
     response = cl.post(
         "/users/login",
