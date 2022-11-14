@@ -166,7 +166,6 @@ def test_invalid_get_profile():
     tok_header = {"token": fake_token}
 
     response = cl.get("/users/profile/", headers=tok_header)
-
     assert response.status_code == 404
 
 def test_get_profile():
@@ -179,6 +178,23 @@ def test_get_profile():
     assert response.json() == {"username": user["username"], "email": user["email"], "avatar_url": None}
 
 def test_invalid_patch_profile():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "alvaro"}, timedelta(hours=1.0)
+    )
+    tok_header = {"token": fake_token}
+
+    response = cl.patch(
+        f"/users/profile/", headers=tok_header,
+        files={
+            "avatar": (
+                "imagen",
+                open(f"{ASSETS_DIR}/users/test.png", "rb"),
+                "image/png",
+            )
+        },
+    )
+    assert response.status_code == 404
+
     user = register_random_users(1)[0]
     tok_header = {"token": user["token"]}
 
@@ -217,9 +233,19 @@ def test_patch_profile():
 
     assert response.status_code == 200
     assert response.json() == {"username": user["username"], "email": user["email"], "avatar_url": new_avatar_url}
+    assert user_db.has_avatar
     assert filecmp.cmp(f'{ASSETS_DIR}/users/{user["username"]}.png', f"{ASSETS_DIR}/users/test.png")
 
+
 def test_invalid_put_password():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "alvaro"}, timedelta(hours=1.0)
+    )
+    tok_header = {"token": fake_token}
+
+    response = cl.put("/users/password/",headers=tok_header, json={"old_password": "estaN0Es", "new_password": "Burrito429"})
+    assert response.status_code == 404
+
     params = json_to_queryparams(
         {"username": "maciel", "password": "Burrito21", "email": "midulcelechona@test.com"})
     response = cl.post(f"/users/{params}")
@@ -243,7 +269,6 @@ def test_put_password():
     assert response.status_code == 201
 
     data = response.json()
-    json = {"old_password": "Burrito21", "new_password": "Burrito429"}
     tok_header = {"token": data["token"]}
     response = cl.put("/users/password/",headers=tok_header, json={"old_password": "Burrito21", "new_password": "Burrito429"})
     assert response.status_code == 200

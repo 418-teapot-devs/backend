@@ -96,7 +96,7 @@ def get_profile(token: str = Header()):
 
 
 @router.patch("/profile/")
-def get_profile(avatar: UploadFile, token: str = Header() ):
+def get_profile(avatar: UploadFile, token: str = Header()):
     username = get_current_user(token)
 
     if avatar.content_type != "image/png":
@@ -117,7 +117,7 @@ def get_profile(avatar: UploadFile, token: str = Header() ):
 
 
 @router.put("/password/")
-def change_password(form_data: ChangePassWord, token: str = Header() ):
+def change_password(form_data: ChangePassWord, token: str = Header()):
     username = get_current_user(token)
 
     with db_session:
