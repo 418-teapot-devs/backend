@@ -2,8 +2,9 @@ import asyncio
 from enum import Enum
 from typing import Dict
 
-from fastapi import APIRouter, Header, HTTPException, WebSocket
+from fastapi import APIRouter, Header, HTTPException, WebSocket, status
 from pony.orm import commit, db_session, select
+from websockets.exceptions import WebSocketException
 
 from app.game.executor import Executor
 from app.models.match import Match
@@ -153,7 +154,7 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
 
     if chan:
         match = match_id_to_schema(match_id)
-        asyncio.run(chan.push(match.json()))
+        asyncio.run(chan.push(match.dict()))
 
 
 @router.put("/{match_id}/start/", status_code=201)
@@ -189,7 +190,7 @@ def start_match(match_id: int, token: str = Header()):
 
     if chan:
         match = match_id_to_schema(match_id)
-        asyncio.run(chan.push(match.json()))
+        asyncio.run(chan.push(match.dict()))
 
     with db_session:
         m = Match.get(id=match_id)
@@ -259,7 +260,7 @@ def leave_match(match_id: int, token: str = Header()):
 
     if chan:
         match = match_id_to_schema(match_id)
-        asyncio.run(chan.push(match.json()))
+        asyncio.run(chan.push(match.dict()))
 
 
 @router.websocket("/{match_id}/ws")
@@ -268,7 +269,8 @@ async def websocket_endpoint(ws: WebSocket, match_id: int):  # pragma: no cover
     with db_session:
         m = Match.get(id=match_id)
         if not m:
-            raise MATCH_NOT_FOUND_ERROR
+            await ws.close()
+            return
         m_state = m.state
 
     chan = channels.get(match_id)
@@ -283,7 +285,7 @@ async def websocket_endpoint(ws: WebSocket, match_id: int):  # pragma: no cover
 
         await chan.connect(ws)
 
-    await ws.send_json(match_id_to_schema(match_id).json())
+    await ws.send_json(match_id_to_schema(match_id).dict())
 
     try:
         while True:
