@@ -3,8 +3,15 @@ from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
 
+from pony.orm import db_session
+
 from app.main import app
+from app.models import Robot
 from app.views.users import create_access_token
+from tests.testutil import (
+    create_random_robots,
+    register_random_users,
+)
 
 cl = TestClient(app)
 
@@ -14,42 +21,34 @@ def json_to_queryparams(json: dict):
 
 
 def test_create_robot():
-    user = {
-        "username": "annaaimeri",
-        "password": "AlpacaTactica158",
-        "email": "annaaimeri@gemail.com",
-    }
+    user = register_random_users(1)[0]
+    token = user["token"]
 
-    response = cl.post(f"/users/{json_to_queryparams(user)}")
-    assert response.status_code == 201
-
-    data = response.json()
-    token = data["token"]
     fake_token = create_access_token(
         {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
     )
 
+
     test_robots = [
-        ("cesco", token, "identity.py", None, 201),
-        ("lueme", token, "identity.py", "identity_avatar.png", 201),
-        ("lueme", token, "identity.py", "identity_avatar.png", 409),
-        ("oricolo", token, None, "identity_avatar.png", 422),
-        ("fnazar", fake_token, "identity.py", None, 404),
-        # ("hola", "hola", ["robot", "identity.py"], 200), TODO handle more jwt errors (fake token)
-    ]
+            {"token": token, "name": "cesco", "code": "identity.py","expected_code": 201},
+            {"token": token, "name": "cesco", "code": "identity.py", "expected_code": 409},
+            {"token": fake_token, "name": "locke", "code": "identity.py", "expected_code": 404},
+            ]
 
-    for robot_name, token, code, avatar, expected_code in test_robots:
+    for m in test_robots:
         files = []
-        if code:
-            files.append(("code", code))
+        files.append(("code", m["code"]))
 
-        if avatar:
-            files.append(("avatar", avatar))
+        files.append(("avatar", None))
 
         response = cl.post(
-            f"/robots/?name={robot_name}", headers={"token": token}, files=files
+            f'/robots/?name={m["name"]}', headers={"token": m["token"]}, files=files
         )
-        assert response.status_code == expected_code
+        assert response.status_code == m["expected_code"]
+
+        if m["expected_code"] == 201:
+            with db_session:
+                assert Robot.exists(name=m["name"])
 
 
 def test_get_robots():
