@@ -1,5 +1,6 @@
 import asyncio
-from fastapi_mail import FastMail, ConnectionConfig, MessageSchema, MessageType
+
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 MAIL_USERNAME = "pyrobots.teapot@gmail.com"
 MAIL_PASSWORD = "lbyqdaxqkwfhhpcp"
@@ -20,7 +21,7 @@ mail_conf = ConnectionConfig(
     MAIL_STARTTLS=True,
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
-    VALIDATE_CERTS=True
+    VALIDATE_CERTS=True,
 )
 
 
@@ -28,7 +29,7 @@ def send_verification_token(e_mail: str, token: str):
     token_link = f"{TOKEN_PREFIX}?token={token}"
 
     with open("app/util/verify_mail.html", "r") as body:
-        email_body = body.read().replace('\n', '').format(token=token_link)
+        email_body = body.read().replace("\n", "").format(token=token_link)
 
     message = MessageSchema(
         subject="Verificación de cuenta",

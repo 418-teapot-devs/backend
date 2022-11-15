@@ -6,11 +6,15 @@ from fastapi.testclient import TestClient
 from pony.orm import db_session
 
 from app.main import app
-from app.util.auth import JWT_ALGORITHM, JWT_SECRET_KEY, create_access_token, get_user_and_subject
 from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.errors import *
 from tests.testutil import register_random_users
+from app.util.auth import (
+    JWT_ALGORITHM,
+    create_access_token,
+    get_user_and_subject,
+)
 
 cl = TestClient(app)
 
@@ -132,7 +136,10 @@ def test_verify():
         user = User.get(name="Seba")
         user.is_verified = False
 
-    login_form = {"username": register_form["username"], "password": register_form["password"]}
+    login_form = {
+        "username": register_form["username"],
+        "password": register_form["password"],
+    }
     response = cl.post("/users/login", json=login_form)
     assert response.status_code == USER_NOT_VERIFIED_ERROR.status_code
 
