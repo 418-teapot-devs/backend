@@ -130,6 +130,9 @@ def change_password(form_data: ChangePassWord, token: str = Header()):
         if not password_context.verify(form_data.old_password, user.password):
             raise NON_EXISTANT_USER_OR_PASSWORD_ERROR
 
+        if form_data.old_password == form_data.new_password:
+            raise CURRENT_PASSWORD_EQUAL_NEW_PASSWORD
+
         user.password=password_context.hash(form_data.new_password)
         commit()
 

@@ -262,6 +262,8 @@ def test_invalid_put_password():
     response = cl.post(f"/users/{params}")
     assert response.status_code == VALUE_NOT_VALID_PASSWORD.status_code
 
+    response = cl.put("/users/password/",headers=tok_header, json={"old_password": "Burrito21", "new_password": "Burrito21"})
+    assert response.status_code == CURRENT_PASSWORD_EQUAL_NEW_PASSWORD.status_code
 
 def test_put_password():
     params = json_to_queryparams(
