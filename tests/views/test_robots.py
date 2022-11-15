@@ -24,6 +24,7 @@ def test_create_robot():
         {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
     )
 
+
     test_robots = [
         {"token": token, "name": "cesco", "code": "identity.py", "expected_code": 201},
         {"token": token, "name": "cesco", "code": "identity.py", "expected_code": 409},
