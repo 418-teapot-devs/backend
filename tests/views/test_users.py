@@ -6,9 +6,9 @@ from fastapi.testclient import TestClient
 from pony.orm import db_session
 
 from app.main import app
+from app.util.auth import JWT_ALGORITHM, JWT_SECRET_KEY, create_access_token, get_user_and_subject
 from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
-from app.util.auth import JWT_ALGORITHM, JWT_SECRET_KEY, create_access_token, get_user_and_subject
 from app.util.errors import *
 from tests.testutil import register_random_users
 
@@ -103,13 +103,13 @@ def test_login():
     test_jsons = [
         (
             {"username": "leo11", "password": "Burrito21"},
-            401,
-            "username not found!",
+            NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code,
+            NON_EXISTANT_USER_OR_PASSWORD_ERROR.detail,
         ),
         (
             {"username": "leo10", "password": "burrito21"},
-            401,
-            "passwords don't match!",
+            NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code,
+            NON_EXISTANT_USER_OR_PASSWORD_ERROR.detail,
         ),
     ]
 
@@ -134,10 +134,10 @@ def test_verify():
 
     login_form = {"username": register_form["username"], "password": register_form["password"]}
     response = cl.post("/users/login", json=login_form)
-    assert response.status_code == 403
+    assert response.status_code == USER_NOT_VERIFIED_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "user is not verified"
+    assert data["detail"] == USER_NOT_VERIFIED_ERROR.detail
 
     token_data = create_access_token(
         {"sub": "verify", "username": register_form["username"]},

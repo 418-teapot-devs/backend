@@ -77,13 +77,13 @@ def login(form_data: Login):
         user = User.get(name=form_data.username)
 
         if not user:
-            raise HTTPException(status_code=401, detail="username not found!")
+            raise NON_EXISTANT_USER_OR_PASSWORD_ERROR
 
         if not user.is_verified:
-            raise HTTPException(status_code=403, detail="user is not verified")
+            raise USER_NOT_VERIFIED_ERROR
 
         if not password_context.verify(form_data.password, user.password):
-            raise HTTPException(status_code=401, detail="passwords don't match!")
+            raise NON_EXISTANT_USER_OR_PASSWORD_ERROR
 
         profile = UserProfile(
             username=user.name, email=user.email, avatar_url=get_user_avatar(user)
