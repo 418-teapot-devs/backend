@@ -8,7 +8,7 @@ MAIL_PORT = 587
 MAIL_SERVER = "smtp.gmail.com"
 MAIL_FROM_NAME = "PyRobots Dev Team - 418 Teapot"
 
-TOKEN_PREFIX = "localhost:8000/users/confirm"
+TOKEN_PREFIX = "localhost:8000/users/verify/"
 
 mail_conf = ConnectionConfig(
     MAIL_USERNAME=MAIL_USERNAME,

@@ -165,4 +165,4 @@ def verify(token: str):
             verify_success = True
             user.is_verified = True
 
-    return f"http://localhost:3000/?verify_succes={verify_success}"
+    return f"http://localhost:3000/login?verify_succes={verify_success}"
