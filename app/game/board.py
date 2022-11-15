@@ -3,6 +3,7 @@ import random
 from typing import List, Tuple
 
 from func_timeout import func_timeout
+
 import app.schemas.simulation as schemas
 from app.game import *
 
@@ -34,7 +35,6 @@ class Board:
                 self.robots.append(r)
             except:
                 pass
-
 
     def next_round(self):
         for r in self.robots:
