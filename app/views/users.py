@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile
+from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
 from pony.orm import commit, db_session
 
@@ -151,25 +152,17 @@ def change_password(form_data: ChangePassWord, token: str = Header()):
         commit()
 
 
-@router.get("/verify/", response_model=Token)
+@router.get("/verify/", response_class=RedirectResponse)
 def verify(token: str):
     username, subject = get_user_and_subject(token)
 
-    if subject != "verify":
-        raise USER_NOT_VERIFIED_ERROR
-
+    verify_success = False
     with db_session:
         user = User.get(name=username)
 
-        # chances for this to happen are astronomically low
-        if not user:
-            raise USER_NOT_FOUND_ERROR
+        # chances for user to not exists are astronomically low
+        if user and subject == "verify":
+            verify_success = True
+            user.is_verified = True
 
-        user.is_verified = True
-
-    token = create_access_token(
-        {"sub": "login", "username": user.name},
-        timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS)
-    )
-
-    return Token(token=token)
+    return f"http://localhost:3000/?verify_succes={verify_success}"
