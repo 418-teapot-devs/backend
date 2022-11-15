@@ -8,7 +8,7 @@ MAIL_PORT = 587
 MAIL_SERVER = "smtp.gmail.com"
 MAIL_FROM_NAME = "PyRobots Dev Team - 418 Teapot"
 
-TOKEN_PREFIX = "localhost:8000/users/verify/"
+TOKEN_PREFIX = "http://localhost:8000/users/verify/"
 
 mail_conf = ConnectionConfig(
     MAIL_USERNAME=MAIL_USERNAME,
@@ -27,19 +27,13 @@ mail_conf = ConnectionConfig(
 def send_verification_token(e_mail: str, token: str):
     token_link = f"{TOKEN_PREFIX}?token={token}"
 
-    e_mail_body = f"""
-<span>
-    <p>
-        Por favor ingrese al siguiente link para verificar su usuario
-        {token_link}
-    </p>
-</span>
-"""
+    with open("app/util/verify_mail.html", "r") as body:
+        email_body = body.read().replace('\n', '').format(token=token_link)
 
     message = MessageSchema(
         subject="Verificación de cuenta",
         recipients=[e_mail],
-        body=e_mail_body,
+        body=email_body,
         subtype=MessageType.html,
     )
 
