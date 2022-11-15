@@ -66,7 +66,8 @@ def test_game_exec():
 def test_robot_invalid_init():
     class TimeoutOnInit(IdBot):
         def initialize(self):
-            while True: pass
+            while True:
+                pass
 
     class ExceptionOnInit(IdBot):
         def initialize(self):
@@ -79,7 +80,8 @@ def test_robot_invalid_init():
 def tst_robot_invalid_respond():
     class TimeoutOnRespond(IdBot):
         def respond(self):
-            while True: pass
+            while True:
+                pass
 
     class ExceptionOnRespond(IdBot):
         def respond(self):
@@ -90,6 +92,7 @@ def tst_robot_invalid_respond():
 
     b.next_round()
     assert len(b.robots) == 2
+
 
 # @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 # def test_game_execute():
