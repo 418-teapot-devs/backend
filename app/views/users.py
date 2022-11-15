@@ -156,13 +156,14 @@ def verify(token: str):
     username, subject = get_user_and_subject(token)
 
     if subject != "verify":
-        raise HTTPException(status_code=403, detail="attempt to verify with login token")
+        raise USER_NOT_VERIFIED_ERROR
 
     with db_session:
         user = User.get(name=username)
 
+        # chances for this to happen are astronomically low
         if not user:
-            raise HTTPException(status_code=404, detail="user does not exist")
+            raise USER_NOT_FOUND_ERROR
 
         user.is_verified = True
 

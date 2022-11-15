@@ -2,6 +2,8 @@ from fastapi import HTTPException
 
 USER_NOT_FOUND_ERROR = HTTPException(status_code=404, detail="User not found")
 
+USER_NOT_VERIFIED_ERROR = HTTPException(status_code=403, detail="User is not verified")
+
 USER_WAS_NOT_IN_MATCH_ERROR = HTTPException(
     status_code=403, detail="User was not in match"
 )
@@ -47,7 +49,7 @@ INVALID_PICTURE_FORMAT_ERROR = HTTPException(
     status_code=422, detail="invalid picture format"
 )
 
-INVALID_TOKEN_EXCEPTION = HTTPException(status_code=401, detail="Invalid token")
+INVALID_TOKEN_ERROR = HTTPException(status_code=401, detail="Invalid token")
 
 NON_EXISTANT_USER_OR_PASSWORD_ERROR = HTTPException(
     status_code=401, detail="Non existant user or password is incorrect"

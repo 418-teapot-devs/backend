@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta
 
 from jose import JWTError, jwt
-from app.util.errors import INVALID_TOKEN_EXCEPTION
 
-from app.util.errors import INVALID_TOKEN_EXCEPTION
+from app.util.errors import INVALID_TOKEN_ERROR
 
 JWT_SECRET_KEY = "92294169bb3637efe9a56293025e8d463089d43f8f1bd1e78c67c8e197a7ef1e"
 JWT_ALGORITHM = "HS256"
@@ -25,10 +24,10 @@ def get_current_user(token: str):
         username = payload.get("username")
 
         if username is None:
-            raise INVALID_TOKEN_EXCEPTION
+            raise INVALID_TOKEN_ERROR
 
     except JWTError:
-        raise INVALID_TOKEN_EXCEPTION
+        raise INVALID_TOKEN_ERROR
 
     return username
 
@@ -40,9 +39,9 @@ def get_user_and_subject(token: str):
         subject = payload.get("sub")
 
         if username is None or subject is None:
-            raise INVALID_TOKEN_EXCEPTION
+            raise INVALID_TOKEN_ERROR
 
     except JWTError:
-        raise INVALID_TOKEN_EXCEPTION
+        raise INVALID_TOKEN_ERROR
 
     return [username, subject]
