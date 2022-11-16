@@ -284,6 +284,8 @@ async def websocket_endpoint(ws: WebSocket, match_id: int):
             await chan.generator.asend(None)
 
         await chan.connect(ws)
+    else:
+        await ws.accept()
 
     await ws.send_json(match_id_to_schema(match_id).dict())
 

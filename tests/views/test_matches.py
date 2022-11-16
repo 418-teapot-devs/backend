@@ -681,3 +681,49 @@ def test_websocket_data_on_connect():
     assert response["host"] == { "username": user["username"], "avatar_url": None }
     assert response["state"] == "Lobby"
     assert response["results"] == None
+
+
+def test_websocket_update_match_state():
+    users = register_random_users(2)
+    [robot] = create_random_robots(users[1]["token"], 1)
+    [match] = create_random_matches(users[0]["token"], 1)
+
+    json_form = {"robot_id": robot["id"], "password": match["password"]}
+    tok_header = {"token": users[1]["token"]}
+
+    cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+
+    with cl.websocket_connect(f"/matches/{match['id']}/ws") as ws:
+        response = ws.receive_json()
+        assert len(response["robots"]) == 2
+        assert response["state"] == "Lobby"
+
+        response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
+
+        response = ws.receive_json()
+        assert len(response["robots"]) == 1
+        assert response["state"] == "Lobby"
+
+
+def test_websocket_finished_connect():
+    users = register_random_users(2)
+    [robot] = create_random_robots(users[1]["token"], 1)
+    match = create_random_matches(users[0]["token"], 6)[-1]
+
+    json_form = {"robot_id": robot["id"], "password": match["password"]}
+    tok_header = {"token": users[1]["token"]}
+
+    cl.put(
+        f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
+    )
+
+    tok_header = {"token": users[0]["token"]}
+    cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
+
+    with cl.websocket_connect(f"/matches/{match['id']}/ws") as ws:
+        response = ws.receive_json()
+
+        assert response["state"] == "Finished"
+        assert response["results"] is not None
