@@ -2,6 +2,8 @@ import math
 import random
 from typing import List, Tuple
 
+from func_timeout import func_timeout
+
 import app.schemas.simulation as schemas
 from app.game import *
 
@@ -27,20 +29,30 @@ class Board:
 
         init_pos = generate_init_positions(len(robot_classes))
         for i, (r_id, rc) in enumerate(robot_classes):
-            r = rc(r_id, i, init_pos[i])
-            r.initialize()
-            self.robots.append(r)
+            try:
+                r = rc(r_id, i, init_pos[i])
+                func_timeout(INIT_TIMEOUT, r.initialize)
+                self.robots.append(r)
+            except:
+                pass
 
     def next_round(self):
         for r in self.robots:
             # respond only schedules movement
             # neither scan nor attack depend on internal logic of others
-            r.respond()
-            r._scan(other._pos for other in self.robots if other is not r)
-            maybe_missile = r._launch_missile()
-            if maybe_missile is not None:
-                self.missiles[self.cur_missile] = maybe_missile
-                self.cur_missile += 1
+            try:
+                func_timeout(RESPOND_TIMEOUT, r.respond)
+                r._scan(other._pos for other in self.robots if other is not r)
+                maybe_missile = r._launch_missile()
+                if maybe_missile is not None:
+                    self.missiles[self.cur_missile] = maybe_missile
+                    self.cur_missile += 1
+            except:
+                # Timeout or exception from respond call
+                # Either way, kill offending robot
+                r._dmg = MAX_DMG
+        # Clean up dead robots
+        self.robots = [r for r in self.robots if r._dmg < MAX_DMG]
 
         self.missiles = {k: m for k, m in self.missiles.items() if m._dist > 0}
         for m in self.missiles.values():

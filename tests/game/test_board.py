@@ -50,8 +50,8 @@ def test_game_exec():
         b.next_round()
         g.append(b.to_round_schema())
 
-    expected_x = [500, 500, 499, 499, 500, 500]
-    expected_y = [500, 500, 500, 499, 499, 501]
+    expected_x = [500, 500, 496, 496, 503, 503]
+    expected_y = [500, 501, 501, 496, 496, 505]
 
     expected = [
         Round(
@@ -60,7 +60,38 @@ def test_game_exec():
         )
         for x_l, y_l in zip(expected_x, expected_y)
     ]
-    # assert g == expected
+    assert g == expected
+
+
+def test_robot_invalid_init():
+    class TimeoutOnInit(IdBot):
+        def initialize(self):
+            while True:
+                pass
+
+    class ExceptionOnInit(IdBot):
+        def initialize(self):
+            assert False
+
+    b = Board([(1, TimeoutOnInit), (2, ExceptionOnInit)])
+    assert len(b.robots) == 0
+
+
+def test_robot_invalid_respond():
+    class TimeoutOnRespond(IdBot):
+        def respond(self):
+            while True:
+                pass
+
+    class ExceptionOnRespond(IdBot):
+        def respond(self):
+            assert False
+
+    b = Board([(1, TimeoutOnRespond), (2, ExceptionOnRespond)])
+    assert len(b.robots) == 2
+
+    b.next_round()
+    assert len(b.robots) == 0
 
 
 # @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
