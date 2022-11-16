@@ -28,7 +28,6 @@ def test_create_robot():
         {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
     )
 
-
     test_robots = [
             {"token": token, "name": "cesco", "code": "identity.py","expected_code": 201},
             {"token": token, "name": "cesco", "code": "identity.py", "expected_code": 409},
@@ -52,42 +51,51 @@ def test_create_robot():
 
 
 def test_get_robots():
-    user = {
-        "username": "leotorres",
-        "password": "AmoElQuartus21",
-        "email": "leo@luis.tv",
-    }
+    user = register_random_users(2)
 
-    response = cl.post(f"/users/{json_to_queryparams(user)}")
-    assert response.status_code == 201
+    fake_token = create_access_token(
+        {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
+    )
 
-    data = response.json()
-    token = data["token"]
+    response = cl.get("/robots/", headers={"token":fake_token})
+    assert response.status_code == 404
 
-    response = cl.get("/robots/", headers={"token": token})
-    assert not list(response.json())
+    robots_u1 = create_random_robots(user[0]["token"],2)
+    robots_u2 = create_random_robots(user[1]["token"],1)
 
     test_robots = [
-        ("locke", "identity.py", None),
-        ("lueme", "identity.py", "identity_avatar.png"),
-    ]
+            [
+                {
+                    "robot_id": int(robots_u1[0]["id"]),
+                    "name": robots_u1[0]["name"],
+                    "avatar_url": None, 
+                    "won_matches": 0,
+                    "played_matches": 0,
+                    "mmr": 0
+                },
+                {
+                    "robot_id": int(robots_u1[1]["id"]),
+                    "name": robots_u1[1]["name"],
+                    "avatar_url": None, 
+                    "won_matches": 0,
+                    "played_matches": 0,
+                    "mmr": 0
+                },
+            ],
+            [
+                {
+                    "robot_id": int(robots_u2[0]["id"]),
+                    "name": robots_u2[0]["name"] ,
+                    "avatar_url": None, 
+                    "won_matches": 0,
+                    "played_matches": 0,
+                    "mmr": 0}]
+            ]
 
-    for robot_name, code, avatar in test_robots:
-        files = []
-        files.append(("code", code))
+    i = 0
+    for r in test_robots:
+        response = cl.get("/robots/", headers={"token": user[i]["token"]})
+        i = i+1
+        assert response.json() == r
 
-        if avatar:
-            files.append(("avatar", avatar))
 
-        response = cl.post(
-            f"/robots/?name={robot_name}", headers={"token": token}, files=files
-        )
-        assert response.status_code == 201
-
-        response = cl.get("/robots/", headers={"token": token})
-        robot = next(filter(lambda r: r["name"] == robot_name, list(response.json())))
-
-        if robot["avatar_url"]:
-            assert f"{robot['robot_id']}" in robot["avatar_url"]
-        else:
-            assert not robot["avatar_url"]
