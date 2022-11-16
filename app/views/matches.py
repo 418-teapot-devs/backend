@@ -229,7 +229,7 @@ def start_match(match_id: int, token: str = Header()):
 
     if chan:
         match = match_id_to_schema(match_id)
-        asyncio.run(chan.push(match))
+        asyncio.run(chan.push(match.dict()))
 
 
 @router.put("/{match_id}/leave/", status_code=201)
