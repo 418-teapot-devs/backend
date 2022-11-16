@@ -53,11 +53,10 @@ NON_EXISTANT_USER_OR_PASSWORD_ERROR = HTTPException(
     status_code=401, detail="Non existant user or password is incorrect"
 )
 
-VALUE_NOT_VALID_PASSWORD =  HTTPException(
+VALUE_NOT_VALID_PASSWORD = HTTPException(
     status_code=422, detail="value is not a valid password"
-    )
+)
 
 CURRENT_PASSWORD_EQUAL_NEW_PASSWORD = HTTPException(
     status_code=409, detail="The current password is equal to the new password"
-    )
-
+)

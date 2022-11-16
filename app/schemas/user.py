@@ -48,6 +48,7 @@ class LoginResponse(BaseModel):
     token: str
     profile: UserProfile
 
+
 class ChangePassWord(BaseModel):
     old_password: str
     new_password: str
