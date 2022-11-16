@@ -2,6 +2,8 @@ from fastapi import HTTPException
 from password_validator import PasswordValidator
 from pydantic import BaseModel, EmailStr, validator
 
+from app.util.errors import VALUE_NOT_VALID_PASSWORD
+
 pass_validator = (
     PasswordValidator()
     .min(8)
@@ -23,8 +25,7 @@ class Register(BaseModel):
     @validator("password")
     def password_is_correct(cls, v):
         if not pass_validator.validate(v):
-            raise HTTPException(status_code=422, detail="value is not a valid password")
-
+            raise VALUE_NOT_VALID_PASSWORD
         return v
 
 
@@ -46,3 +47,14 @@ class UserProfile(BaseModel):
 class LoginResponse(BaseModel):
     token: str
     profile: UserProfile
+
+
+class ChangePassWord(BaseModel):
+    old_password: str
+    new_password: str
+
+    @validator("new_password")
+    def password_is_correct(cls, v):
+        if not pass_validator.validate(v):
+            raise VALUE_NOT_VALID_PASSWORD
+        return v

@@ -1,11 +1,18 @@
+import filecmp
+from datetime import timedelta
+from os import path
 from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
 from jose import jwt
+from pony.orm import commit, db_session
 
 from app.main import app
-from app.util.assets import ASSETS_DIR
-from app.util.auth import JWT_ALGORITHM, JWT_SECRET_KEY
+from app.models.user import User
+from app.util.assets import ASSETS_DIR, get_user_avatar
+from app.util.auth import JWT_ALGORITHM, JWT_SECRET_KEY, create_access_token
+from app.util.errors import *
+from tests.testutil import register_random_users
 
 cl = TestClient(app)
 
@@ -150,3 +157,187 @@ def test_users_avatar():
     payload = jwt.decode(data["token"], JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
     assert payload["sub"] == "login"
     assert payload["username"] == "conavatar"
+
+
+def test_invalid_get_profile():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "alvaro"}, timedelta(hours=1.0)
+    )
+    tok_header = {"token": fake_token}
+
+    response = cl.get("/users/profile/", headers=tok_header)
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
+
+
+def test_get_profile():
+    user = register_random_users(1)[0]
+    tok_header = {"token": user["token"]}
+
+    response = cl.get("/users/profile/", headers=tok_header)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "username": user["username"],
+        "email": user["email"],
+        "avatar_url": None,
+    }
+
+
+def test_invalid_patch_profile():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "alvaro"}, timedelta(hours=1.0)
+    )
+    tok_header = {"token": fake_token}
+
+    response = cl.patch(
+        f"/users/profile/",
+        headers=tok_header,
+        files={
+            "avatar": (
+                "imagen",
+                open(f"{ASSETS_DIR}/users/test.png", "rb"),
+                "image/png",
+            )
+        },
+    )
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
+
+    user = register_random_users(1)[0]
+    tok_header = {"token": user["token"]}
+
+    response = cl.patch(
+        f"/users/profile/",
+        headers=tok_header,
+        files={
+            "avatar": (
+                "imagen",
+                open(f"{ASSETS_DIR}/robots/code/test_id_bot.py", "rb"),
+                "text/x-python",
+            )
+        },
+    )
+    assert response.status_code == INVALID_PICTURE_FORMAT_ERROR.status_code
+
+
+def test_patch_profile():
+    user = register_random_users(1)[0]
+    tok_header = {"token": user["token"]}
+
+    response = cl.patch(
+        f"/users/profile/",
+        headers=tok_header,
+        files={
+            "avatar": (
+                "imagen",
+                open(f"{ASSETS_DIR}/users/test.png", "rb"),
+                "image/png",
+            )
+        },
+    )
+
+    with db_session:
+        user_db = User.get(name=user["username"])
+
+    new_avatar_url = get_user_avatar(user_db)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "username": user["username"],
+        "email": user["email"],
+        "avatar_url": new_avatar_url,
+    }
+    assert user_db.has_avatar
+    assert filecmp.cmp(
+        f'{ASSETS_DIR}/users/{user["username"]}.png', f"{ASSETS_DIR}/users/test.png"
+    )
+
+
+def test_invalid_put_password():
+    fake_token = create_access_token(
+        {"sub": "login", "username": "alvaro"}, timedelta(hours=1.0)
+    )
+    tok_header = {"token": fake_token}
+
+    response = cl.put(
+        "/users/password/",
+        headers=tok_header,
+        json={"old_password": "estaN0Es", "new_password": "Burrito429"},
+    )
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
+
+    params = json_to_queryparams(
+        {
+            "username": "maciel",
+            "password": "Burrito21",
+            "email": "midulcelechona@test.com",
+        }
+    )
+    response = cl.post(f"/users/{params}")
+    assert response.status_code == 201
+
+    data = response.json()
+    tok_header = {"token": data["token"]}
+    response = cl.put(
+        "/users/password/",
+        headers=tok_header,
+        json={"old_password": "estaN0Es", "new_password": "Burrito429"},
+    )
+    assert response.status_code == NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code
+
+    params = json_to_queryparams(
+        {
+            "username": "maciel",
+            "password": "burrito",
+            "email": "midulcelechona@test.com",
+        }
+    )
+    response = cl.post(f"/users/{params}")
+    assert response.status_code == VALUE_NOT_VALID_PASSWORD.status_code
+
+    response = cl.put(
+        "/users/password/",
+        headers=tok_header,
+        json={"old_password": "Burrito21", "new_password": "Burrito21"},
+    )
+    assert response.status_code == CURRENT_PASSWORD_EQUAL_NEW_PASSWORD.status_code
+
+
+def test_put_password():
+    params = json_to_queryparams(
+        {
+            "username": "maciel",
+            "password": "Burrito21",
+            "email": "midulcelechona@test.com",
+        }
+    )
+    response = cl.post(f"/users/{params}")
+    assert response.status_code == 201
+
+    data = response.json()
+    tok_header = {"token": data["token"]}
+    response = cl.put(
+        "/users/password/",
+        headers=tok_header,
+        json={"old_password": "Burrito21", "new_password": "Burrito429"},
+    )
+    assert response.status_code == 200
+
+    response = cl.post(
+        "/users/login",
+        json={
+            "username": "maciel",
+            "password": "Burrito21",
+            "email": "midulcelechona@test.com",
+        },
+    )
+    assert response.status_code == NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code
+
+    response = cl.post(
+        "/users/login",
+        json={
+            "username": "maciel",
+            "password": "Burrito429",
+            "email": "midulcelechona@test.com",
+        },
+    )
+    assert response.status_code == 200
