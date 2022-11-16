@@ -1,7 +1,9 @@
+import pytest
 from datetime import timedelta
 
 from fastapi.testclient import TestClient
 from pony.orm import commit, db_session
+from starlette import websockets
 
 from app.main import app
 from app.models import Match, Robot, RobotMatchResult
@@ -660,3 +662,22 @@ def test_start_match_minimum():
 
     data = response.json()
     assert data["detail"] == MATCH_MINIMUM_PLAYERS_NOT_REACHED_ERROR.detail
+
+
+def test_websocket_invalid_connect():
+    with pytest.raises(websockets.WebSocketDisconnect):
+        with cl.websocket_connect("/matches/5/ws"):
+            assert False
+
+
+def test_websocket_data_on_connect():
+    [user] = register_random_users(1)
+    [match] = create_random_matches(user["token"], 1)
+
+    with cl.websocket_connect(f"/matches/{match['id']}/ws") as ws:
+        response = ws.receive_json()
+
+    assert response["id"] == int(match["id"])
+    assert response["host"] == { "username": user["username"], "avatar_url": None }
+    assert response["state"] == "Lobby"
+    assert response["results"] == None
