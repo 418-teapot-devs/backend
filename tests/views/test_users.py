@@ -1,16 +1,14 @@
 import filecmp
 from datetime import timedelta
-from os import path
 from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
-from jose import jwt
-from pony.orm import commit, db_session
+from pony.orm import db_session
 
 from app.main import app
 from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
-from app.util.auth import JWT_ALGORITHM, JWT_SECRET_KEY, create_access_token
+from app.util.auth import JWT_ALGORITHM, create_access_token, get_user_and_subject
 from app.util.errors import *
 from tests.testutil import register_random_users
 
@@ -44,9 +42,9 @@ def test_users_register_restrictions():
     data = response.json()
     assert "token" in data.keys()
 
-    payload = jwt.decode(data["token"], JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-    assert payload["sub"] == "login"
-    assert payload["username"] == "test"
+    username, subject = get_user_and_subject(data["token"])
+    assert subject == "login"
+    assert username == "test"
 
     test_jsons = [
         (
@@ -98,26 +96,62 @@ def test_login():
     data = response.json()
     assert "token" in data.keys()
 
-    payload = jwt.decode(data["token"], JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-    assert payload["sub"] == "login"
-    assert payload["username"] == "leo10"
+    username, subject = get_user_and_subject(data["token"])
+    assert subject == "login"
+    assert username == register_form["username"]
 
     test_jsons = [
         (
             {"username": "leo11", "password": "Burrito21"},
-            401,
-            "username not found!",
+            NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code,
+            NON_EXISTANT_USER_OR_PASSWORD_ERROR.detail,
         ),
         (
             {"username": "leo10", "password": "burrito21"},
-            401,
-            "passwords don't match!",
+            NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code,
+            NON_EXISTANT_USER_OR_PASSWORD_ERROR.detail,
         ),
     ]
 
     for params, status_code, expected_msg in test_jsons:
         response = cl.post("/users/login", json=params)
         assert response.status_code == status_code
+
+
+def test_verify():
+    register_form = {
+        "username": "Seba",
+        "password": "Secr3tIs1m0#",
+        "email": "sebastian.giraudo@mi.unc.edu.ar",
+    }
+
+    response = cl.post(f"/users/{json_to_queryparams(register_form)}")
+    assert response.status_code == 201
+
+    with db_session:
+        user = User.get(name="Seba")
+        user.is_verified = False
+
+    login_form = {
+        "username": register_form["username"],
+        "password": register_form["password"],
+    }
+    response = cl.post("/users/login", json=login_form)
+    assert response.status_code == USER_NOT_VERIFIED_ERROR.status_code
+
+    data = response.json()
+    assert data["detail"] == USER_NOT_VERIFIED_ERROR.detail
+
+    token_data = create_access_token(
+        {"sub": "verify", "username": register_form["username"]},
+        timedelta(hours=1.0),
+    )
+
+    response = cl.get(f"/users/verify/?token={token_data}")
+    # cannot check status_code because it depends in frontend being mounted
+
+    response = cl.post("/users/login", json=login_form)
+    assert response.status_code == 200
 
 
 def test_users_avatar():
@@ -154,9 +188,9 @@ def test_users_avatar():
     data = response.json()
     assert "token" in data.keys()
 
-    payload = jwt.decode(data["token"], JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-    assert payload["sub"] == "login"
-    assert payload["username"] == "conavatar"
+    username, subject = get_user_and_subject(data["token"])
+    assert subject == "login"
+    assert username == json["username"]
 
 
 def test_invalid_get_profile():

@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile
+from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
 from pony.orm import commit, db_session
 
@@ -14,8 +15,9 @@ from app.schemas.user import (
     UserProfile,
 )
 from app.util.assets import ASSETS_DIR, get_user_avatar
-from app.util.auth import create_access_token, get_current_user
+from app.util.auth import create_access_token, get_current_user, get_user_and_subject
 from app.util.errors import *
+from app.util.mail import send_verification_token
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
@@ -54,12 +56,12 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         )
         commit()
 
-        # verify_token = create_access_token(
-        #     {"sub": "verify", "username": user.name},
-        #     timedelta(days=VERIFY_TOKEN_EXPIRE_DAYS),
-        # )
+        verify_token = create_access_token(
+            {"sub": "verify", "username": user.name},
+            timedelta(days=VERIFY_TOKEN_EXPIRE_DAYS),
+        )
 
-        # send verify token via e-mail
+        send_verification_token(user.email, verify_token)
 
         login_token = create_access_token(
             {"sub": "login", "username": user.name},
@@ -75,10 +77,13 @@ def login(form_data: Login):
         user = User.get(name=form_data.username)
 
         if not user:
-            raise HTTPException(status_code=401, detail="username not found!")
+            raise NON_EXISTANT_USER_OR_PASSWORD_ERROR
+
+        if not user.is_verified:
+            raise USER_NOT_VERIFIED_ERROR
 
         if not password_context.verify(form_data.password, user.password):
-            raise HTTPException(status_code=401, detail="passwords don't match!")
+            raise NON_EXISTANT_USER_OR_PASSWORD_ERROR
 
         profile = UserProfile(
             username=user.name, email=user.email, avatar_url=get_user_avatar(user)
@@ -145,3 +150,19 @@ def change_password(form_data: ChangePassWord, token: str = Header()):
 
         user.password = password_context.hash(form_data.new_password)
         commit()
+
+
+@router.get("/verify/", response_class=RedirectResponse)
+def verify(token: str):
+    username, subject = get_user_and_subject(token)
+
+    verify_success = False
+    with db_session:
+        user = User.get(name=username)
+
+        # chances for user to not exist are astronomically low
+        if user and subject == "verify":
+            verify_success = True
+            user.is_verified = True
+
+    return f"http://localhost:3000/login?verify_success={verify_success}"

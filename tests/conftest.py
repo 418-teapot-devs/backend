@@ -1,6 +1,18 @@
 import pytest
+from pony.orm import db_session
 
-from app.models.database import db
+import app.views.users
+from app.models import User, db
+
+
+@pytest.fixture(autouse=True)
+def verify_bypass(monkeypatch):
+    def verify(email, _):
+        with db_session:
+            user = User.get(email=email)
+            user.is_verified = True
+
+    monkeypatch.setattr(app.views.users, "send_verification_token", verify)
 
 
 @pytest.fixture(autouse=True)
