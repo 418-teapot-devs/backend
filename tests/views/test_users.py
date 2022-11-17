@@ -8,13 +8,9 @@ from pony.orm import db_session
 from app.main import app
 from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
+from app.util.auth import JWT_ALGORITHM, create_access_token, get_user_and_subject
 from app.util.errors import *
 from tests.testutil import register_random_users
-from app.util.auth import (
-    JWT_ALGORITHM,
-    create_access_token,
-    get_user_and_subject,
-)
 
 cl = TestClient(app)
 

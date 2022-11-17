@@ -16,8 +16,8 @@ from app.schemas.user import (
 )
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import create_access_token, get_current_user, get_user_and_subject
-from app.util.mail import send_verification_token
 from app.util.errors import *
+from app.util.mail import send_verification_token
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
@@ -160,7 +160,7 @@ def verify(token: str):
     with db_session:
         user = User.get(name=username)
 
-        # chances for user to not exists are astronomically low
+        # chances for user to not exist are astronomically low
         if user and subject == "verify":
             verify_success = True
             user.is_verified = True
