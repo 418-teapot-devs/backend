@@ -16,6 +16,11 @@ def get_robot(token: str = Header()):
     username = get_current_user(token)
 
     with db_session:
+
+        user = User.get(name=username)
+        if user is None:
+            raise USER_NOT_FOUND_ERROR
+
         robots = []
         for robot in select(r for r in Robot if r.owner.name == username):
             robots.append(
