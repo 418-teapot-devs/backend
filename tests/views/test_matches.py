@@ -74,7 +74,6 @@ def test_created_invalid_match():
     for i in range(2):
         robots.append(create_random_robots(users[i]["token"], 1)[0])
 
-
     matches = [
         {
             "token": users[0]["token"],
@@ -97,7 +96,7 @@ def test_created_invalid_match():
             "games": 200,
             "password": "algo",
             "expected_code": 401,
-        }
+        },
     ]
 
     for m in matches:
@@ -115,7 +114,7 @@ def test_post_created():
     matches = [
         {
             "token": users[0]["token"],
-            "name":"partida1",
+            "name": "partida1",
             "robot_id": 1,
             "max_players": 4,
             "min_players": 2,
@@ -134,7 +133,7 @@ def test_post_created():
             "games": 200,
             "password": "algo",
             "expected_code": 201,
-        }
+        },
     ]
 
     for m in matches:
@@ -143,6 +142,7 @@ def test_post_created():
 
         with db_session:
             assert Match.exists(name=m["name"])
+
 
 def test_get_created():
     users = register_random_users(2)
@@ -163,11 +163,15 @@ def test_get_created():
                 "games": m1.game_count,
                 "rounds": m1.round_count,
                 "is_private": True,
-                "robots": {f"{r1.id}": {"name": r1.name,
-                            "avatar_url": None,
-                            "username":users[0]["username"]} },
+                "robots": {
+                    f"{r1.id}": {
+                        "name": r1.name,
+                        "avatar_url": None,
+                        "username": users[0]["username"],
+                    }
+                },
                 "state": "Lobby",
-                "results": None
+                "results": None,
             },
             {
                 "name": m2.name,
@@ -178,11 +182,15 @@ def test_get_created():
                 "games": m2.game_count,
                 "rounds": m2.round_count,
                 "is_private": True,
-                "robots": {f"{r2.id}": {"name": r2.name,
-                            "avatar_url": None,
-                            "username":users[0]["username"]} },
+                "robots": {
+                    f"{r2.id}": {
+                        "name": r2.name,
+                        "avatar_url": None,
+                        "username": users[0]["username"],
+                    }
+                },
                 "state": "Lobby",
-                "results": None
+                "results": None,
             },
         ]
 
@@ -191,9 +199,12 @@ def test_get_created():
     )
     assert response.status_code == 200
 
-    response = cl.get("/matches/?match_type=created", headers={"token": users[0]["token"]})
+    response = cl.get(
+        "/matches/?match_type=created", headers={"token": users[0]["token"]}
+    )
     assert response.status_code == 200
     assert response.json() == get_matches
+
 
 def test_join_nonexistant_match():
     user = register_random_users(1)[0]

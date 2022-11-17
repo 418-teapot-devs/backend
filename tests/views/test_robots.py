@@ -2,16 +2,12 @@ from datetime import timedelta
 from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
-
 from pony.orm import db_session
 
 from app.main import app
 from app.models import Robot
 from app.views.users import create_access_token
-from tests.testutil import (
-    create_random_robots,
-    register_random_users,
-)
+from tests.testutil import create_random_robots, register_random_users
 
 cl = TestClient(app)
 
@@ -29,10 +25,15 @@ def test_create_robot():
     )
 
     test_robots = [
-            {"token": token, "name": "cesco", "code": "identity.py","expected_code": 201},
-            {"token": token, "name": "cesco", "code": "identity.py", "expected_code": 409},
-            {"token": fake_token, "name": "locke", "code": "identity.py", "expected_code": 404},
-            ]
+        {"token": token, "name": "cesco", "code": "identity.py", "expected_code": 201},
+        {"token": token, "name": "cesco", "code": "identity.py", "expected_code": 409},
+        {
+            "token": fake_token,
+            "name": "locke",
+            "code": "identity.py",
+            "expected_code": 404,
+        },
+    ]
 
     for m in test_robots:
         files = []
@@ -57,45 +58,43 @@ def test_get_robots():
         {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
     )
 
-    response = cl.get("/robots/", headers={"token":fake_token})
+    response = cl.get("/robots/", headers={"token": fake_token})
     assert response.status_code == 404
 
-    robots_u1 = create_random_robots(user[0]["token"],2)
-    robots_u2 = create_random_robots(user[1]["token"],1)
+    robots_u1 = create_random_robots(user[0]["token"], 2)
+    robots_u2 = create_random_robots(user[1]["token"], 1)
 
     test_robots = [
-            [
-                {
-                    "robot_id": int(robots_u1[0]["id"]),
-                    "name": robots_u1[0]["name"],
-                    "avatar_url": None, 
-                    "won_matches": 0,
-                    "played_matches": 0,
-                    "mmr": 0
-                },
-                {
-                    "robot_id": int(robots_u1[1]["id"]),
-                    "name": robots_u1[1]["name"],
-                    "avatar_url": None, 
-                    "won_matches": 0,
-                    "played_matches": 0,
-                    "mmr": 0
-                },
-            ],
-            [
-                {
-                    "robot_id": int(robots_u2[0]["id"]),
-                    "name": robots_u2[0]["name"] ,
-                    "avatar_url": None, 
-                    "won_matches": 0,
-                    "played_matches": 0,
-                    "mmr": 0}]
-            ]
+        [
+            {
+                "robot_id": int(robots_u1[0]["id"]),
+                "name": robots_u1[0]["name"],
+                "avatar_url": None,
+                "won_matches": 0,
+                "played_matches": 0,
+                "mmr": 0,
+            },
+            {
+                "robot_id": int(robots_u1[1]["id"]),
+                "name": robots_u1[1]["name"],
+                "avatar_url": None,
+                "won_matches": 0,
+                "played_matches": 0,
+                "mmr": 0,
+            },
+        ],
+        [
+            {
+                "robot_id": int(robots_u2[0]["id"]),
+                "name": robots_u2[0]["name"],
+                "avatar_url": None,
+                "won_matches": 0,
+                "played_matches": 0,
+                "mmr": 0,
+            }
+        ],
+    ]
 
-    i = 0
-    for r in test_robots:
+    for i, r in enumerate(test_robots):
         response = cl.get("/robots/", headers={"token": user[i]["token"]})
-        i = i+1
         assert response.json() == r
-
-
