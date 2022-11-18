@@ -24,6 +24,8 @@ mail_conf = ConnectionConfig(
     VALIDATE_CERTS=True,
 )
 
+fm = FastMail(mail_conf)
+
 
 def send_verification_token(e_mail: str, token: str):
     token_link = f"{TOKEN_PREFIX}?token={token}"
@@ -38,5 +40,4 @@ def send_verification_token(e_mail: str, token: str):
         subtype=MessageType.html,
     )
 
-    fm = FastMail(mail_conf)
     asyncio.run(fm.send_message(message))
