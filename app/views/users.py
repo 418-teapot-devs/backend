@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 from pony.orm import commit, db_session
 
 from app.models.user import User
+from app.models.robot import Robot
 from app.schemas.user import (
     ChangePassWord,
     Login,
@@ -67,6 +68,14 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
             {"sub": "login", "username": user.name},
             timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS),
         )
+
+
+        # Create deafults robots
+        default = Robot(owner=user, name="default", has_avatar=False)
+        commit()
+
+        with open(f"{ASSETS_DIR}/robots/code/{default.id}.py", "w") as f:
+            f.write("hola")
 
         return Token(token=login_token)
 
