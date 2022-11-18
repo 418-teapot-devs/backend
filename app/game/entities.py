@@ -9,14 +9,15 @@ def clamp(x, lo, hi):
     return min(max(lo, x), hi)
 
 
-# Based on
-# https://stackoverflow.com/questions/37600118/test-if-point-inside-angle/37601169
+# Compute de determinant (signed area) of the matrix defined by
+# the vectors `ba` and `bc`
+    # =0 : the transformation has area 0: points are collinear
+    # >0 : the matrix squishes and stretches space: clockwise rotation
+    # <0 : the matrix "flips" the orientation of the plane: counterclockwise rotation
 def orientation(a, b, c):
-    # consider the rotation defined by the points a, b and c
-    # k==0: Collinear
-    # k>0 : Clockwise rotation
-    # k<0 : Counterclockwise rotation
-    return (b[1] - a[1]) * (c[0] - b[0]) - (b[0] - a[0]) * (c[1] - b[0])
+    ba = (a[0] - b[0], a[1] - b[1])
+    bc = (c[0] - b[0], c[1] - b[1])
+    return ba[0] * bc[1] - ba[1] * bc[0]
 
 
 class Missile:
@@ -72,12 +73,6 @@ class Robot(abc.ABC):
         # Reset scanner
         self._scanner_params = None
 
-        # Scanning all board
-        if res >= math.pi:
-            self._scanner_result = min(
-                (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
-            )
-
         # calculate scan_l, scan_r: points in the lines that define the scan zone
         scan_r, scan_l = (dir - res, dir + res)
         scan_r = (math.cos(scan_r), math.sin(scan_r))
@@ -85,19 +80,13 @@ class Robot(abc.ABC):
         scan_r = (self._pos[0] + scan_r[0], self._pos[1] + scan_r[1])
         scan_l = (self._pos[0] + scan_l[0], self._pos[1] + scan_l[1])
 
-        def in_acute(l, r, pt):
-            return (
-                orientation(self._pos, l, pt) > 0 and orientation(self._pos, r, pt) < 0
-            )
+        # valid since the angle is always acute
+        def in_scan_area(pt):
+            right_of_left = orientation(self._pos, scan_l, pt)
+            left_of_right = orientation(self._pos, scan_r, pt)
+            return right_of_left and left_of_right
 
-        if res <= math.pi / 2:  # scanning an acute angle
-            scan_positions = [
-                pos for pos in scan_positions if in_acute(scan_l, scan_r, pos)
-            ]
-        else:  # scanning an obtuse angle
-            scan_positions = [
-                pos for pos in scan_positions if not in_acute(scan_r, scan_l, pos)
-            ]
+        scan_positions = [pos for pos in scan_positions if in_scan_area(pos)]
 
         self._scanner_result = min(
             (math.dist(self._pos, pos) for pos in scan_positions), default=math.inf
