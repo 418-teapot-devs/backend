@@ -264,7 +264,7 @@ def leave_match(match_id: int, token: str = Header()):
 
 
 @router.websocket("/{match_id}/ws")
-async def websocket_endpoint(ws: WebSocket, match_id: int):  # pragma: no cover
+async def websocket_endpoint(ws: WebSocket, match_id: int):
 
     with db_session:
         m = Match.get(id=match_id)
@@ -284,6 +284,8 @@ async def websocket_endpoint(ws: WebSocket, match_id: int):  # pragma: no cover
             await chan.generator.asend(None)
 
         await chan.connect(ws)
+    else:
+        await ws.accept()
 
     await ws.send_json(match_id_to_schema(match_id).dict())
 

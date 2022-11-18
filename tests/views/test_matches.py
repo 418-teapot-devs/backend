@@ -1,5 +1,4 @@
 from datetime import timedelta
-from time import sleep
 
 from fastapi.testclient import TestClient
 from pony.orm import commit, db_session
@@ -563,7 +562,6 @@ def test_start_match():
 
     response = cl.put("/matches/1/start/", headers=tok_header)
 
-    sleep(2)
     assert response.status_code == 201
 
     with db_session:

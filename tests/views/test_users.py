@@ -8,6 +8,7 @@ from pony.orm import db_session
 from app.main import app
 from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
+from app.util.mail import fm, send_verification_token, MAIL_FROM_NAME, MAIL_USERNAME
 from app.util.auth import JWT_ALGORITHM, create_access_token, get_user_and_subject
 from app.util.errors import *
 from tests.testutil import register_random_users
@@ -116,6 +117,25 @@ def test_login():
     for params, status_code, expected_msg in test_jsons:
         response = cl.post("/users/login", json=params)
         assert response.status_code == status_code
+
+
+def test_send_mail():
+    [user] = register_random_users(1)
+
+    verify_token = create_access_token(
+        {"sub": "verify", "username": user["username"]},
+        timedelta(days=1.0),
+    )
+
+    with db_session:
+        User[user["username"]].is_verified = False
+
+    fm.config.SUPPRESS_SEND = 1
+    with fm.record_messages() as outbox:
+        send_verification_token(user["email"], verify_token)
+        assert len(outbox) == 1
+        assert outbox[0]["from"] == f"{MAIL_FROM_NAME} <{MAIL_USERNAME}>"
+        assert outbox[0]["to"] == user["email"]
 
 
 def test_verify():
