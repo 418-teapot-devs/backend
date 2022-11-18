@@ -7,6 +7,7 @@ from pony.orm import db_session
 
 from app.main import app
 from app.models.user import User
+from app.models.robot import Robot
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.mail import fm, send_verification_token, MAIL_FROM_NAME, MAIL_USERNAME
 from app.util.auth import JWT_ALGORITHM, create_access_token, get_user_and_subject
@@ -395,3 +396,32 @@ def test_put_password():
         },
     )
     assert response.status_code == 200
+
+# recordar mover de lugar
+def test_defautl_robots():
+    params = json_to_queryparams(
+        {"username": "leo", "password": "Burrito21", "email": "l@test.com"}
+        )
+    response = cl.post(f"/users/{params}")
+    assert response.status_code == 201
+
+    data = response.json()
+    token_header = {"token": data["token"]}
+
+    with db_session:
+        assert(Robot.exists(name="default"))
+
+    expected_result = [
+            {
+                "robot_id": 1,
+                "name": "default",
+                "avatar_url": None,
+                "won_matches": 0,
+                "played_matches": 0,
+                "mmr": 0
+            }
+        ]
+
+    response = cl.get("/robots/", headers= token_header)
+    assert response.status_code == 200
+    assert response.json() == expected_result
