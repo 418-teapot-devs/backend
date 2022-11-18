@@ -160,12 +160,15 @@ class Robot(abc.ABC):
         return self._cannon_cooldown == 0
 
     def cannon(self, degree, distance):
-        self._cannon_params = (math.radians(degree % 360), distance)
+        self._cannon_params = (
+            math.radians(degree % 360),
+            clamp(distance, 0, 700)
+        )
 
     def point_scanner(self, direction, resolution_in_degrees):
         self._scanner_params = (
             math.radians(direction % 360),
-            math.radians(clamp(resolution_in_degrees, 0, 180)),
+            math.radians(clamp(resolution_in_degrees, 0, 10)),
         )
 
     def scanned(self):
