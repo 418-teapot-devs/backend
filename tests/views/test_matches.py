@@ -77,7 +77,7 @@ def test_created_invalid_match():
         {
             "token": users[0]["token"],
             "name": "partida1",
-            "robot_id": 3,
+            "robot_id": 7,
             "max_players": 4,
             "min_players": 2,
             "rounds": 10000,
@@ -88,7 +88,7 @@ def test_created_invalid_match():
         {
             "token": users[1]["token"],
             "name": "partida1",
-            "robot_id": 1,
+            "robot_id": robots[0]["id"],
             "max_players": 4,
             "min_players": 2,
             "rounds": 10000,
@@ -114,7 +114,7 @@ def test_post_created():
         {
             "token": users[0]["token"],
             "name": "partida1",
-            "robot_id": 1,
+            "robot_id": robots[0]["id"],
             "max_players": 4,
             "min_players": 2,
             "rounds": 10000,
@@ -125,7 +125,7 @@ def test_post_created():
         {
             "token": users[1]["token"],
             "name": "partida2",
-            "robot_id": 2,
+            "robot_id": robots[1]["id"],
             "max_players": 4,
             "min_players": 2,
             "rounds": 10000,

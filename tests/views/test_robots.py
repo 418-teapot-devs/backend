@@ -67,6 +67,7 @@ def test_get_robots():
 
     test_robots = [
         [
+
             {
                 "robot_id": int(robots_u1[0]["id"]),
                 "name": robots_u1[0]["name"],
@@ -83,6 +84,21 @@ def test_get_robots():
                 "played_matches": 0,
                 "mmr": 0,
             },
+            {
+                "robot_id": 1,
+                "name": "default_1",
+                "avatar_url": "/assets/avatars/robot/1.png",
+                "won_matches": 0,
+                "played_matches": 0,
+                "mmr": 0,
+            },           {
+                "robot_id": 2,
+                "name": "default_2",
+                "avatar_url": "/assets/avatars/robot/2.png",
+                "won_matches": 0,
+                "played_matches": 0,
+                "mmr": 0,
+            },
         ],
         [
             {
@@ -92,7 +108,24 @@ def test_get_robots():
                 "won_matches": 0,
                 "played_matches": 0,
                 "mmr": 0,
-            }
+            },
+            {
+                "robot_id": 3,
+                "name": "default_1",
+                "avatar_url": "/assets/avatars/robot/3.png",
+                "won_matches": 0,
+                "played_matches": 0,
+                "mmr": 0,
+            },
+            {
+                "robot_id": 4,
+                "name": "default_2",
+                "avatar_url": "/assets/avatars/robot/4.png",
+                "won_matches": 0,
+                "played_matches": 0,
+                "mmr": 0,
+            },
+
         ],
     ]
 
