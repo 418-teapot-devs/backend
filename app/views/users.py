@@ -19,7 +19,7 @@ from app.schemas.user import (
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import create_access_token, get_current_user, get_user_and_subject
 from app.util.errors import *
-from app.util.mail import send_verification_token
+from app.util.mail import send_verification_token, send_recovery_mail
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
@@ -96,7 +96,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         return Token(token=login_token)
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login/", response_model=LoginResponse)
 def login(form_data: Login):
     with db_session:
         user = User.get(name=form_data.username)
@@ -191,3 +191,19 @@ def verify(token: str):
             user.is_verified = True
 
     return f"http://localhost:3000/login?verify_success={verify_success}"
+
+
+@router.get("/recover/")
+def recover(email: str):
+    with db_session:
+        user = User.get(email=email)
+
+    if not user:
+        raise EMAIL_DOESNT_BELONG_TO_USER
+
+    access_token = create_access_token(
+        {"sub": "login", "username": user.name},
+        timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS),
+    )
+
+    send_recovery_mail(email, access_token)

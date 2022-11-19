@@ -82,3 +82,7 @@ VALUE_NOT_VALID_PASSWORD = HTTPException(
 CURRENT_PASSWORD_EQUAL_NEW_PASSWORD = HTTPException(
     status_code=409, detail="The current password is equal to the new password"
 )
+
+EMAIL_DOESNT_BELONG_TO_USER = HTTPException(
+    status_code=401, detail="Email does not belong to any user"
+)
