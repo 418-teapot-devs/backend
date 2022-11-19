@@ -91,7 +91,7 @@ def test_login():
     assert response.status_code == 201
 
     response = cl.post(
-        "/users/login",
+        "/users/login/",
         json={"username": "leo10", "password": "Burrito21"},
     )
     assert response.status_code == 200
@@ -117,7 +117,7 @@ def test_login():
     ]
 
     for params, status_code, expected_msg in test_jsons:
-        response = cl.post("/users/login", json=params)
+        response = cl.post("/users/login/", json=params)
         assert response.status_code == status_code
 
 
@@ -158,7 +158,7 @@ def test_verify():
         "username": register_form["username"],
         "password": register_form["password"],
     }
-    response = cl.post("/users/login", json=login_form)
+    response = cl.post("/users/login/", json=login_form)
     assert response.status_code == USER_NOT_VERIFIED_ERROR.status_code
 
     data = response.json()
@@ -172,7 +172,7 @@ def test_verify():
     response = cl.get(f"/users/verify/?token={token_data}")
     # cannot check status_code because it depends in frontend being mounted
 
-    response = cl.post("/users/login", json=login_form)
+    response = cl.post("/users/login/", json=login_form)
     assert response.status_code == 200
 
 
@@ -428,7 +428,7 @@ def test_put_password():
     assert response.status_code == 200
 
     response = cl.post(
-        "/users/login",
+        "/users/login/",
         json={
             "username": "maciel",
             "password": "Burrito21",
@@ -438,7 +438,7 @@ def test_put_password():
     assert response.status_code == NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code
 
     response = cl.post(
-        "/users/login",
+        "/users/login/",
         json={
             "username": "maciel",
             "password": "Burrito429",

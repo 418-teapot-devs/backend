@@ -9,7 +9,8 @@ MAIL_PORT = 587
 MAIL_SERVER = "smtp.gmail.com"
 MAIL_FROM_NAME = "PyRobots Dev Team - 418 Teapot"
 
-TOKEN_PREFIX = "http://localhost:8000/users/verify/"
+VERIFY_TOKEN_PREFIX = "http://localhost:8000/users/verify/"
+RECOVERY_TOKEN_PREFIX = "http://localhost:3000/recover"
 
 mail_conf = ConnectionConfig(
     MAIL_USERNAME=MAIL_USERNAME,
@@ -27,15 +28,31 @@ mail_conf = ConnectionConfig(
 fm = FastMail(mail_conf)
 
 
-def send_verification_token(e_mail: str, token: str):
-    token_link = f"{TOKEN_PREFIX}?token={token}"
+def send_verification_token(email: str, token: str):
+    token_link = f"{VERIFY_TOKEN_PREFIX}?token={token}"
 
     with open("app/util/verify_mail.html", "r") as body:
         email_body = body.read().replace("\n", "").format(token=token_link)
 
     message = MessageSchema(
         subject="Verificación de cuenta",
-        recipients=[e_mail],
+        recipients=[email],
+        body=email_body,
+        subtype=MessageType.html,
+    )
+
+    asyncio.run(fm.send_message(message))
+
+
+def send_recovery_mail(email: str, token: str):
+    token_link = f"{RECOVERY_TOKEN_PREFIX}?token={token}"
+
+    with open("app/util/verify_mail.html", "r") as body:
+        email_body = body.read().replace("\n", "").format(token=token_link)
+
+    message = MessageSchema(
+        subject="Verificación de cuenta",
+        recipients=[email],
         body=email_body,
         subtype=MessageType.html,
     )
