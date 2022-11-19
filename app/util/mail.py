@@ -47,11 +47,11 @@ def send_verification_token(email: str, token: str):
 def send_recovery_mail(email: str, token: str):
     token_link = f"{RECOVERY_TOKEN_PREFIX}?token={token}"
 
-    with open("app/util/verify_mail.html", "r") as body:
+    with open("app/util/recover_mail.html", "r") as body:
         email_body = body.read().replace("\n", "").format(token=token_link)
 
     message = MessageSchema(
-        subject="Verificación de cuenta",
+        subject="Recuperación de contraseña",
         recipients=[email],
         body=email_body,
         subtype=MessageType.html,

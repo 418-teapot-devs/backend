@@ -193,7 +193,7 @@ def verify(token: str):
     return f"http://localhost:3000/login?verify_success={verify_success}"
 
 
-@router.get("/recover/")
+@router.put("/recover/")
 def recover(email: str):
     with db_session:
         user = User.get(email=email)
