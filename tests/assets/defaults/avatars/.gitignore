@@ -4,5 +4,5 @@
 !.gitignore
 # And files needed for testing
 !test*
-!default_1.py
-!default_2.py
+!default_1.png
+!default_2.png
