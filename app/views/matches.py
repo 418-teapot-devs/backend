@@ -222,6 +222,12 @@ def start_match(match_id: int, token: str = Header()):
 
     with db_session:
         Robot[robots_by_pos[0]].won_matches += 1
+        Robot[robots_by_pos[0]].mmr += 20
+
+        for rid in robots_by_pos[1:]:
+            robot = Robot[rid]
+            robot.mmr = max(robot.mmr - 10, 0)
+
         commit()
 
     # Notify websockets

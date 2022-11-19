@@ -99,6 +99,8 @@ def create_random_matches(token, count):
             robot_count=1,
             max_players=4,
             min_players=2,
+            game_count=20,
+            round_count=5000,
             password=password,
         )
         commit()

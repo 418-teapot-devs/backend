@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Header, HTTPException, UploadFile
 from pony.orm import commit, db_session, select
 
 from app.models.robot import Robot
@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.get("/")
-def get_robot(token: str = Header()):
+def get_robots(token: str = Header()):
     username = get_current_user(token)
 
     with db_session:
@@ -36,7 +36,7 @@ def get_robot(token: str = Header()):
     return robots
 
 
-@router.post("/")
+@router.post("/", status_code=201)
 def create_robot(
     name: str, code: UploadFile, avatar: UploadFile | None = None, token: str = Header()
 ):
@@ -63,5 +63,3 @@ def create_robot(
     if avatar:
         with open(f"{ASSETS_DIR}/robots/avatars/{robot.id}.png", "wb") as f:
             f.write(avatar.file.read())
-
-    return Response(status_code=201)
