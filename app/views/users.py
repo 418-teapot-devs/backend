@@ -15,6 +15,8 @@ from app.schemas.user import (
     Register,
     Token,
     UserProfile,
+    Recover,
+    ResetPassword,
 )
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import create_access_token, get_current_user, get_user_and_subject
@@ -194,16 +196,32 @@ def verify(token: str):
 
 
 @router.put("/recover/")
-def recover(email: str):
+def recover(form_data: Recover):
     with db_session:
-        user = User.get(email=email)
+        user = User.get(email=form_data.email)
 
     if not user:
         raise EMAIL_DOESNT_BELONG_TO_USER
 
     access_token = create_access_token(
-        {"sub": "login", "username": user.name},
+        {"sub": "recovery", "username": user.name},
         timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS),
     )
 
-    send_recovery_mail(email, access_token)
+    send_recovery_mail(form_data.email, access_token)
+
+
+@router.put("/reset_password/")
+def reset_password(form_data: ResetPassword, token: str = Header()):
+    username, subject = get_user_and_subject(token)
+
+    with db_session:
+        user = User.get(name=username)
+
+        if not user or subject != "recovery":
+             raise INVALID_TOKEN_ERROR
+
+        if password_context.verify(form_data.new_password, user.password):
+            raise CURRENT_PASSWORD_EQUAL_NEW_PASSWORD
+
+        user.password = password_context.hash(form_data.new_password)
