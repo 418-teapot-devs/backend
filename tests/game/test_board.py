@@ -3,8 +3,25 @@ from unittest import mock
 from app.game import BOARD_SZ, entities
 from app.game.board import *
 from app.schemas.simulation import RobotInRound, Round
-from tests.assets.defaults.code.test_id_bot import IdBot
-from tests.assets.defaults.code.test_loop_bot import LoopBot
+
+
+class IdBot(entities.Robot):
+    def initialize(self):
+        return
+
+    def respond(self):
+        return
+
+
+class LoopBot(entities.Robot):
+    def initialize(self):
+        self.var = 0
+        return
+
+    def respond(self):
+        self.var += 90
+        self.drive(self.var, 50)
+        return
 
 
 def test_init_positions():

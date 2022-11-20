@@ -4,4 +4,3 @@ class IdBot(Robot):
 
     def respond(self):
         return
-

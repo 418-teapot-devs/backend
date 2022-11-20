@@ -1,13 +1,41 @@
-from ast import Attribute, Call, ClassDef, FunctionDef, Import, ImportFrom, Load, Name, parse, walk
+from ast import (
+    Attribute,
+    Call,
+    ClassDef,
+    FunctionDef,
+    Import,
+    ImportFrom,
+    Load,
+    Name,
+    parse,
+    walk,
+)
 
 from app.game.entities import Robot
-from app.util.errors import ROBOT_CODE_CLASSES_ERROR, ROBOT_CODE_UNIMPLEMENTED_ERROR, ROBOT_CODE_UNSAFE_ERROR, ROBOT_CODE_WAW_ERROR
-
+from app.util.errors import (
+    ROBOT_CODE_CLASSES_ERROR,
+    ROBOT_CODE_UNIMPLEMENTED_ERROR,
+    ROBOT_CODE_UNSAFE_ERROR,
+    ROBOT_CODE_WAW_ERROR,
+)
 
 ALLOWED_IMPORTS = {"math", "random", "numpy", "tensorflow"}
-FORBIDDEN_FUNCS = {"delattr", "eval", "exec", "getattr", "globals", "input", "locals", "open", "setattr", "vars"}
+FORBIDDEN_FUNCS = {
+    "delattr",
+    "eval",
+    "exec",
+    "getattr",
+    "globals",
+    "input",
+    "locals",
+    "open",
+    "setattr",
+    "vars",
+}
 ROBOT_ABSTR_FUNCS = {"initialize", "respond"}
-ROBOT_FINAL_FUNCS = {f for f in dir(Robot) if not f.startswith("__") and f not in ROBOT_ABSTR_FUNCS}
+ROBOT_FINAL_FUNCS = {
+    f for f in dir(Robot) if not f.startswith("__") and f not in ROBOT_ABSTR_FUNCS
+}
 ROBOT_API_FUNCS = {f for f in ROBOT_FINAL_FUNCS if not f.startswith("_")}
 ROBOT_PRIV_FUNCS = {f for f in ROBOT_FINAL_FUNCS if f.startswith("_")}
 

@@ -30,21 +30,24 @@ def test_create_robot():
     )
 
     test_robots = [
-        {"token": token, "name": "cesco", "code": "identity.py", "expected_code": 201},
-        {"token": token, "name": "cesco", "code": "identity.py", "expected_code": 409},
+        {"token": token, "name": "cesco", "code": True, "expected_code": 201},
+        {"token": token, "name": "cesco", "code": True, "expected_code": 409},
+        {"token": token, "name": "lueme", "code": False, "expected_code": 422},
         {
             "token": fake_token,
             "name": "locke",
-            "code": "identity.py",
+            "code": True,
             "expected_code": 404,
         },
     ]
 
+    robot_code = open("tests/assets/robots/code/test_id_bot.py")
+
     for m in test_robots:
         files = []
-        files.append(("code", m["code"]))
-
-        files.append(("avatar", None))
+        if m["code"]:
+            robot_code.seek(0)
+            files.append(("code", robot_code))
 
         response = cl.post(
             f'/robots/?name={m["name"]}', headers={"token": m["token"]}, files=files
