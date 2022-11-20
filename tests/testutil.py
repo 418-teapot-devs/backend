@@ -54,7 +54,7 @@ def register_random_users(count):
 
 def create_random_robots(token, count):
     robots = [{"id": None, "name": None} for _ in range(count)]
-    robot_code = open("tests/assets/robots/code/test_id_bot.py")
+    robot_code = open("tests/assets/defaults/code/test_id_bot.py")
 
     for i in range(count):
         robotname = f"{i}" + random_ascii_string(9)

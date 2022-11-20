@@ -1,16 +1,18 @@
-import filecmp
 from datetime import timedelta
+from filecmp import cmp
+from os import path
 from urllib.parse import quote_plus
 
 from fastapi.testclient import TestClient
 from pony.orm import db_session
 
 from app.main import app
+from app.models.robot import Robot
 from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
-from app.util.mail import fm, send_verification_token, MAIL_FROM_NAME, MAIL_USERNAME
 from app.util.auth import JWT_ALGORITHM, create_access_token, get_user_and_subject
 from app.util.errors import *
+from app.util.mail import MAIL_FROM_NAME, MAIL_USERNAME, fm, send_verification_token
 from tests.testutil import register_random_users
 
 cl = TestClient(app)
@@ -186,7 +188,7 @@ def test_users_avatar():
         files={
             "avatar": (
                 "imagen",
-                open(f"{ASSETS_DIR}/robots/code/test_id_bot.py", "rb"),
+                open(f"{ASSETS_DIR}/defaults/code/test_id_bot.py", "rb"),
                 "text/x-python",
             )
         },
@@ -211,6 +213,55 @@ def test_users_avatar():
     username, subject = get_user_and_subject(data["token"])
     assert subject == "login"
     assert username == json["username"]
+
+
+def test_default_robots():
+    params = json_to_queryparams(
+        {"username": "leo", "password": "Burrito21", "email": "l@test.com"}
+    )
+    response = cl.post(f"/users/{params}")
+    assert response.status_code == 201
+
+    data = response.json()
+    token_header = {"token": data["token"]}
+
+    with db_session:
+        assert Robot.exists(name="default_1")
+
+    expected_result = [
+        {
+            "robot_id": 1,
+            "name": "default_1",
+            "avatar_url": "/assets/avatars/robot/1.png",
+            "won_matches": 0,
+            "played_matches": 0,
+            "mmr": 0,
+        },
+        {
+            "robot_id": 2,
+            "name": "default_2",
+            "avatar_url": "/assets/avatars/robot/2.png",
+            "won_matches": 0,
+            "played_matches": 0,
+            "mmr": 0,
+        },
+    ]
+
+    response = cl.get("/robots/", headers=token_header)
+    assert response.status_code == 200
+    assert response.json() == expected_result
+    assert path.exists(f"{ASSETS_DIR}/robots/code/1.py") and path.exists(
+        f"{ASSETS_DIR}/robots/code/2.py"
+    )
+    assert path.exists(f"{ASSETS_DIR}/robots/avatars/1.png") and path.exists(
+        f"{ASSETS_DIR}/robots/avatars/2.png"
+    )
+    assert cmp(
+        f"{ASSETS_DIR}/robots/code/1.py", f"{ASSETS_DIR}/defaults/code/default_1.py"
+    )
+    assert cmp(
+        f"{ASSETS_DIR}/robots/code/2.py", f"{ASSETS_DIR}/defaults/code/default_2.py"
+    )
 
 
 def test_invalid_get_profile():
@@ -265,7 +316,7 @@ def test_invalid_patch_profile():
         files={
             "avatar": (
                 "imagen",
-                open(f"{ASSETS_DIR}/robots/code/test_id_bot.py", "rb"),
+                open(f"{ASSETS_DIR}/defaults/code/test_id_bot.py", "rb"),
                 "text/x-python",
             )
         },
@@ -301,7 +352,7 @@ def test_patch_profile():
         "avatar_url": new_avatar_url,
     }
     assert user_db.has_avatar
-    assert filecmp.cmp(
+    assert cmp(
         f'{ASSETS_DIR}/users/{user["username"]}.png', f"{ASSETS_DIR}/users/test.png"
     )
 

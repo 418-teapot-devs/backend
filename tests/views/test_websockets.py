@@ -1,10 +1,16 @@
-from fastapi.testclient import TestClient
 import pytest
 from fastapi import websockets
+from fastapi.testclient import TestClient
+
 from app.main import app
-from tests.testutil import register_random_users, create_random_matches, create_random_robots
+from tests.testutil import (
+    create_random_matches,
+    create_random_robots,
+    register_random_users,
+)
 
 cl = TestClient(app)
+
 
 def test_websocket_invalid_connect():
     with pytest.raises(websockets.WebSocketDisconnect):
@@ -52,14 +58,14 @@ def test_websocket_change_state():
     robots = sum((create_random_robots(users[i]["token"], 1) for i in range(2)), [])
 
     create_json = {
-                "name": "match",
-                "robot_id": robots[0]["id"],
-                "max_players": 2,
-                "min_players": 2,
-                "rounds": 5,
-                "games": 1,
-                "password": "123",
-            }
+        "name": "match",
+        "robot_id": robots[0]["id"],
+        "max_players": 2,
+        "min_players": 2,
+        "rounds": 5,
+        "games": 1,
+        "password": "123",
+    }
     join_json = {"robot_id": robots[1]["id"], "password": "123"}
     tok_headers = [{"token": users[i]["token"]} for i in range(2)]
 

@@ -1,10 +1,12 @@
 from datetime import timedelta
+from shutil import copyfile
 
 from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile
 from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
 from pony.orm import commit, db_session
 
+from app.models.robot import Robot
 from app.models.user import User
 from app.schemas.user import (
     ChangePassWord,
@@ -66,6 +68,29 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
         login_token = create_access_token(
             {"sub": "login", "username": user.name},
             timedelta(days=LOGIN_TOKEN_EXPIRE_DAYS),
+        )
+
+        # Create deafults robots
+        default_1 = Robot(owner=user, name="default_1", has_avatar=True)
+        default_2 = Robot(owner=user, name="default_2", has_avatar=True)
+        commit()
+
+        copyfile(
+            f"{ASSETS_DIR}/defaults/avatars/default_1.png",
+            f"{ASSETS_DIR}/robots/avatars/{default_1.id}.png",
+        )
+        copyfile(
+            f"{ASSETS_DIR}/defaults/code/default_1.py",
+            f"{ASSETS_DIR}/robots/code/{default_1.id}.py",
+        )
+
+        copyfile(
+            f"{ASSETS_DIR}/defaults/avatars/default_2.png",
+            f"{ASSETS_DIR}/robots/avatars/{default_2.id}.png",
+        )
+        copyfile(
+            f"{ASSETS_DIR}/defaults/code/default_2.py",
+            f"{ASSETS_DIR}/robots/code/{default_2.id}.py",
         )
 
         return Token(token=login_token)
