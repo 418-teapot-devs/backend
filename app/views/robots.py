@@ -6,7 +6,7 @@ from app.models.user import User
 from app.schemas.robot import RobotResponse
 from app.util.assets import ASSETS_DIR, get_robot_avatar
 from app.util.auth import get_current_user
-from app.util.check_code import safe_to_exec, check_code_format
+from app.util.check_code import check_code
 from app.util.errors import *
 
 router = APIRouter()
@@ -46,8 +46,7 @@ def create_robot(
     src = code.file.read()
 
     try:
-        if not safe_to_exec(src):
-            raise ROBOT_CODE_UNSAFE_ERROR
+        check_code(src)
     except SyntaxError:
         raise ROBOT_CODE_SYNTAX_ERROR
 
@@ -68,7 +67,7 @@ def create_robot(
 
     with open(f"{ASSETS_DIR}/robots/code/{robot.id}.py", "wb") as f:
         f.write(b"from app.game.entities import Robot\n")
-        f.write(code.file.read())
+        f.write(src)
 
     if avatar:
         with open(f"{ASSETS_DIR}/robots/avatars/{robot.id}.png", "wb") as f:

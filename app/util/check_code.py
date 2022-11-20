@@ -1,8 +1,7 @@
-from ast import Attribute, Call, Import, ImportFrom, Name, parse, walk
-from importlib.util import module_from_spec, spec_from_loader
-from inspect import getmembers, getmodule, isclass, isfunction
+from ast import Attribute, Call, ClassDef, FunctionDef, Import, ImportFrom, Load, Name, parse, walk
+
 from app.game.entities import Robot
-from app.util.errors import ROBOT_CODE_CLASSES_ERROR, ROBOT_CODE_UNIMPLEMENTED_ERROR, ROBOT_CODE_WAW_ERROR
+from app.util.errors import ROBOT_CODE_CLASSES_ERROR, ROBOT_CODE_UNIMPLEMENTED_ERROR, ROBOT_CODE_UNSAFE_ERROR, ROBOT_CODE_WAW_ERROR
 
 
 ALLOWED_IMPORTS = {"math", "random", "numpy", "tensorflow"}
@@ -20,25 +19,46 @@ ROBOT_PRIV_VARS = {v for v in vars(r).keys()}
 def check_code(src: bytes):
     tree = parse(src)
 
+    methods = set()
+    robot_count = 0
     for node in walk(tree):
         match node:
             # restrict imports
             case Import(names=names):
                 if any(alias.name not in ALLOWED_IMPORTS for alias in names):
-                    return False
+                    raise ROBOT_CODE_UNSAFE_ERROR
             case ImportFrom(module=module, level=level):
                 if level != 0 or module not in ALLOWED_IMPORTS:
-                    return False
-            # disable dunders
-            case Attribute(attr=attr):
-                if attr.startswith("__"):
-                    return False
-            case Name(id=name):
-                if name.startswith("__"):
-                    return False
+                    raise ROBOT_CODE_UNSAFE_ERROR
             # disable calls to some builtins and to private functions
             case Call(func=Name(id=name)):
                 if name in FORBIDDEN_FUNCS or name in ROBOT_PRIV_FUNCS:
-                    return False
+                    raise ROBOT_CODE_UNSAFE_ERROR
+            # disable dunders
+            case Name(id=name):
+                if name.startswith("__"):
+                    raise ROBOT_CODE_UNSAFE_ERROR
+            # disable dunders and private variable access
+            case Attribute(attr=attr):
+                if attr.startswith("__"):
+                    raise ROBOT_CODE_UNSAFE_ERROR
+                if attr in ROBOT_PRIV_VARS:
+                    raise ROBOT_CODE_UNSAFE_ERROR
+            # redefining methods is not allowed
+            case FunctionDef(name=name):
+                if name in ROBOT_FINAL_FUNCS:
+                    raise ROBOT_CODE_WAW_ERROR
+                if name in ROBOT_ABSTR_FUNCS:
+                    methods.add(name)
+            # code must define exactly one robot
+            case ClassDef(name=name, bases=bases):
+                if Name(id="Robot", ctx=Load()) in bases:
+                    robot_count += 1
+                    if robot_count > 1:
+                        raise ROBOT_CODE_CLASSES_ERROR
+                    if len(bases) > 1:
+                        raise ROBOT_CODE_UNSAFE_ERROR
 
-    return True
+    if methods != ROBOT_ABSTR_FUNCS:
+        raise ROBOT_CODE_UNIMPLEMENTED_ERROR
+    return
