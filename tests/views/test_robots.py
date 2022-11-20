@@ -132,6 +132,25 @@ def test_check_methods():
     assert response.json()["detail"] == "Invalid name for method or attribute of robot"
 
 
+def test_check_classes():
+    [user] = register_random_users(1)
+    token = user["token"]
+    src1 = base_src + base_src
+    src2 = base_src + "class A(Robot, Exception):\n    def initialize(self): pass\n"
+
+    response = cl.post(
+            f"/robots/?name=bot", headers={"token": token}, files=[("code", src1)]
+        )
+    assert response.status_code == 418
+    assert response.json()["detail"] == "Code must define exactly one class that inherits from Robot"
+
+    response = cl.post(
+            f"/robots/?name=bot", headers={"token": token}, files=[("code", src2)]
+        )
+    assert response.status_code == 418
+    assert response.json()["detail"] == "Code must define exactly one class that inherits from Robot"
+
+
 def test_get_robots():
     users = register_random_users(2)
     fake_token = create_access_token(
