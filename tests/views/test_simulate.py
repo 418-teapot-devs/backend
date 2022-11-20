@@ -50,7 +50,12 @@ def test_invalid_simulation():
 
     response = cl.get("/robots/", headers={"token": tokens[0]})
 
-    [cesco, lueme] = list(filter (lambda d: d["name"] == "cesco" or d["name"] == "lueme", list(response.json())))
+    [cesco, lueme] = list(
+        filter(
+            lambda d: d["name"] == "cesco" or d["name"] == "lueme",
+            list(response.json()),
+        )
+    )
     assert cesco["name"] == "cesco" and lueme["name"] == "lueme"
 
     simulations = [
@@ -106,7 +111,12 @@ def test_run_simulation():
         assert response.status_code == expected_code
 
     response = cl.get("/robots/", headers={"token": token})
-    [cesco, lueme] = list(filter (lambda d: d["name"] == "cesco" or d["name"] == "lueme", list(response.json())))
+    [cesco, lueme] = list(
+        filter(
+            lambda d: d["name"] == "cesco" or d["name"] == "lueme",
+            list(response.json()),
+        )
+    )
     assert cesco["name"] == "cesco" and lueme["name"] == "lueme"
 
     simulations = [

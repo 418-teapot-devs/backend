@@ -6,9 +6,13 @@ from pony.orm import db_session
 
 from app.main import app
 from app.models import Robot
-from app.views.users import create_access_token
 from app.models.robot import Robot
-from tests.testutil import register_random_users, create_random_robots, create_random_matches
+from app.views.users import create_access_token
+from tests.testutil import (
+    create_random_matches,
+    create_random_robots,
+    register_random_users,
+)
 
 cl = TestClient(app)
 
@@ -67,7 +71,6 @@ def test_get_robots():
 
     test_robots = [
         [
-
             {
                 "robot_id": int(robots_u1[0]["id"]),
                 "name": robots_u1[0]["name"],
@@ -91,7 +94,8 @@ def test_get_robots():
                 "won_matches": 0,
                 "played_matches": 0,
                 "mmr": 0,
-            },           {
+            },
+            {
                 "robot_id": 2,
                 "name": "default_2",
                 "avatar_url": "/assets/avatars/robot/2.png",
@@ -125,7 +129,6 @@ def test_get_robots():
                 "played_matches": 0,
                 "mmr": 0,
             },
-
         ],
     ]
 
@@ -146,7 +149,9 @@ def test_robot_results():
         join_form = {"robot_id": player["robot"]["id"], "password": match["password"]}
         token_header = {"token": player["token"]}
 
-        response = cl.put(f"/matches/{match['id']}/join/", headers=token_header, json=join_form)
+        response = cl.put(
+            f"/matches/{match['id']}/join/", headers=token_header, json=join_form
+        )
         assert response.status_code == 201
 
     host_token_header = {"token": host["token"]}
