@@ -6,7 +6,6 @@ from pony.orm import db_session
 
 from app.main import app
 from app.models import Robot
-from app.models.robot import Robot
 from app.views.users import create_access_token
 from tests.testutil import (
     create_random_matches,
@@ -22,7 +21,7 @@ def json_to_queryparams(json: dict):
 
 
 def test_create_robot():
-    user = register_random_users(1)[0]
+    [user] = register_random_users(1)
     token = user["token"]
 
     fake_token = create_access_token(
@@ -59,9 +58,82 @@ def test_create_robot():
                 assert Robot.exists(name=m["name"])
 
 
-def test_get_robots():
-    user = register_random_users(2)
+def test_check_invalid_syntax():
+    [user] = register_random_users(1)
+    token = user["token"]
+    response = cl.post(
+            f"/robots/?name=nofunca", headers={"token": token}, files=[("code", "robot._)")]
+    )
+    assert response.status_code == 418
+    assert response.json()["detail"] == "Syntax error"
 
+
+base_src = """class Bot(Robot):
+    def initialize(self):
+        pass
+    def respond(self):
+        pass
+"""
+
+
+def test_check_imports():
+    [user] = register_random_users(1)
+    token = user["token"]
+    srcs = [
+    "import os\n" + base_src,
+    "import importlib as i\n" + base_src,
+    "from ..app.game import entities",
+    "from os import chroot\n" + base_src,
+    ]
+
+    for src in srcs:
+        response = cl.post(
+                f"/robots/?name=bot", headers={"token": token}, files=[("code", src)]
+            )
+        assert response.status_code == 418
+        assert response.json()["detail"] == "Forbidden functions or imports found in code"
+
+
+def test_check_builtins():
+    [user] = register_random_users(1)
+    token = user["token"]
+    srcs = [
+    "__import__(\"os\")\n" + base_src,
+    "v = datetime.__vars__\n" + base_src,
+    "import numpy\ngetattr(numpy, \"__builtins__\")\n" + base_src,
+    "exec(\"import os\\ni = os.__builtins__.__import__\")\n" + base_src,
+    "open(\"randomfile\", \"w\").write(\"random stuff\")\n" + base_src,
+]
+
+    for src in srcs:
+        response = cl.post(
+                f"/robots/?name=bot", headers={"token": token}, files=[("code", src)]
+            )
+        assert response.status_code == 418
+        assert response.json()["detail"] == "Forbidden functions or imports found in code"
+
+
+def test_check_methods():
+    [user] = register_random_users(1)
+    token = user["token"]
+    src1 = "\n".join(base_src.splitlines()[:-2]) # class without a method
+    src2 = base_src + "    def get_damage(self):\n        self._dmg = 0\n"
+
+    response = cl.post(
+            f"/robots/?name=bot", headers={"token": token}, files=[("code", src1)]
+        )
+    assert response.status_code == 418
+    assert response.json()["detail"] == "Methods initialize or respond not implemented"
+
+    response = cl.post(
+            f"/robots/?name=bot", headers={"token": token}, files=[("code", src2)]
+        )
+    assert response.status_code == 418
+    assert response.json()["detail"] == "Invalid name for method or attribute of robot"
+
+
+def test_get_robots():
+    users = register_random_users(2)
     fake_token = create_access_token(
         {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
     )
@@ -69,8 +141,8 @@ def test_get_robots():
     response = cl.get("/robots/", headers={"token": fake_token})
     assert response.status_code == 404
 
-    robots_u1 = create_random_robots(user[0]["token"], 2)
-    robots_u2 = create_random_robots(user[1]["token"], 1)
+    robots_u1 = create_random_robots(users[0]["token"], 2)
+    robots_u2 = create_random_robots(users[1]["token"], 1)
 
     test_robots = [
         [
@@ -136,7 +208,7 @@ def test_get_robots():
     ]
 
     for i, r in enumerate(test_robots):
-        response = cl.get("/robots/", headers={"token": user[i]["token"]})
+        response = cl.get("/robots/", headers={"token": users[i]["token"]})
         assert response.json() == r
 
 

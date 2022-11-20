@@ -80,7 +80,7 @@ def check_code(src: bytes):
                     methods.add(name)
             # code must define exactly one robot
             case ClassDef(name=name, bases=bases):
-                if Name(id="Robot", ctx=Load()) in bases:
+                if any(b.id == "Robot" for b in bases):
                     robot_count += 1
                     if robot_count > 1:
                         raise ROBOT_CODE_CLASSES_ERROR
