@@ -214,7 +214,8 @@ def test_users_avatar():
     assert subject == "login"
     assert username == json["username"]
 
-def test_defautl_robots():
+
+def test_default_robots():
     params = json_to_queryparams(
         {"username": "leo", "password": "Burrito21", "email": "l@test.com"}
         )
