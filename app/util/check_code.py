@@ -14,10 +14,10 @@ ROBOT_PRIV_FUNCS = {f for f in ROBOT_FINAL_FUNCS if f.startswith("_")}
 
 del Robot.__abstractmethods__
 r = Robot(0, 0, (0, 0))
-ROBOT_PIRV_VARS = {v for v in vars(r).keys()}
+ROBOT_PRIV_VARS = {v for v in vars(r).keys()}
 
 
-def safe_to_exec(src: bytes):
+def check_code(src: bytes):
     tree = parse(src)
 
     for node in walk(tree):
@@ -42,24 +42,3 @@ def safe_to_exec(src: bytes):
                     return False
 
     return True
-
-
-def check_code_format(src):
-    # create temporary module
-    spec = spec_from_loader("mod", loader=None)
-    assert spec is not None
-    mod = module_from_spec(spec)
-    exec(src, mod.__dict__)
-    # get classes of module
-    classes = [c for c in getmembers(mod, isclass) if c[0] != "Robot"]
-    if len(classes) != 1:
-        raise ROBOT_CODE_CLASSES_ERROR
-    # check that no important function is overwritten
-    r = classes[0][1]
-    f_methods = (f[1] for f in getmembers(r, isfunction) if f[0] in ROBOT_FINAL_FUNCS)
-    a_methods = (f[1] for f in getmembers(r, isfunction) if f[0] in ROBOT_ABSTR_FUNCS)
-    if any(getmodule(f).__name__ != "app.game.entities" for f in f_methods):
-        raise ROBOT_CODE_WAW_ERROR
-    if any(getmodule(f).__name__ == "app.game.entities" for f in a_methods):
-        raise ROBOT_CODE_UNIMPLEMENTED_ERROR
-

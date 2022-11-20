@@ -51,8 +51,6 @@ def create_robot(
     except SyntaxError:
         raise ROBOT_CODE_SYNTAX_ERROR
 
-    check_code_format(src)
-
     with db_session:
 
         user = User.get(name=username)
