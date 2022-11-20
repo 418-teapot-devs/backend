@@ -40,7 +40,7 @@ def test_create_robot():
         },
     ]
 
-    robot_code = open("tests/assets/robots/code/test_id_bot.py")
+    robot_code = open("tests/assets/defaults/code/test_id_bot.py")
 
     for m in test_robots:
         files = []
