@@ -82,8 +82,8 @@ class Robot(abc.ABC):
 
         # valid since the angle is always acute
         def in_scan_area(pt):
-            right_of_left = orientation(self._pos, scan_l, pt)
-            left_of_right = orientation(self._pos, scan_r, pt)
+            right_of_left = orientation(self._pos, scan_l, pt) >= 0
+            left_of_right = orientation(self._pos, scan_r, pt) <= 0
             return right_of_left and left_of_right
 
         scan_positions = [pos for pos in scan_positions if in_scan_area(pos)]

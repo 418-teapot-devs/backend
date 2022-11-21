@@ -2,6 +2,7 @@ from unittest import mock
 
 from app.game import BOARD_SZ, entities
 from app.game.board import *
+from app.game.executor import Executor
 from app.schemas.simulation import RobotInRound, Round
 
 
@@ -111,14 +112,11 @@ def test_robot_invalid_respond():
     assert len(b.robots) == 0
 
 
+@mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
+def test_game_execute():
+    e = Executor(["test_id_bot", "test_aggressive_bot"])
 
+    e.execute_game(1000)
 
-# @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
-# def test_game_execute():
-#     b = Board(["test_id_bot", "test_aggressive_bot"])
-#     g = [b.to_round_schema()]
-
-#     expected_winners = ["test_aggressive_bot"]
-#     winners = b.execute_game(1000)
-
-#     assert expected_winners == winners
+    assert e.survived_games["test_aggressive_bot"] == 1
+    assert e.won_games["test_aggressive_bot"] == 1
