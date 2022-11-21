@@ -99,7 +99,7 @@ def get_robot_details(robot_id: int, token: str = Header()):
             mmr=robot.mmr,
         )
 
-    with open(f"app/assets/robots/code/{robot_id}.py") as code:
+    with open(f"{ASSETS_DIR}/robots/code/{robot_id}.py") as code:
         code.readline()  # do not send line with `Robot` import
         return RobotDetails(robot_info=info, code=code.read())
 
@@ -124,7 +124,7 @@ def update_robot_code(robot_id: int, code: RobotCode, token: str = Header()):
         pass
         check_code(code.code)
     except SyntaxError:
-        raise SyntaxError
+        raise ROBOT_CODE_SYNTAX_ERROR
 
     with open(f"{ASSETS_DIR}/robots/code/{robot_id}.py", "w") as f:
         f.write("from app.game.entities import Robot\n")

@@ -268,3 +268,52 @@ def test_robot_results():
         assert robot.played_matches == 1
         assert robot.mmr == expected_mmr
         assert robot.won_matches == expected_won_matches
+
+
+def test_get_robot_details():
+    [user1, user2] = register_random_users(2)
+    fake_token = create_access_token(
+        {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
+    )
+
+    response = cl.get("/robots/1/", headers={"token": fake_token})
+    assert response.status_code == 404
+
+    response = cl.get("/robots/10000/", headers={"token": user1["token"]})
+    assert response.status_code == 404
+
+    response = cl.get("/robots/1/", headers={"token": user2["token"]})
+    assert response.status_code == 403
+
+    response = cl.get("/robots/1/", headers={"token": user1["token"]})
+    assert response.status_code == 200
+    assert len(response.json()["code"]) > 0
+
+def test_update_robot_code():
+    [user1, user2] = register_random_users(2)
+    fake_token = create_access_token(
+        {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
+    )
+
+    with open("tests/assets/defaults/code/test_id_bot.py") as f:
+        new_code = f.read()
+
+    response = cl.put("/robots/1/", headers={"token": fake_token}, json={"code": new_code})
+    assert response.status_code == 404
+
+    response = cl.put("/robots/10/", headers={"token": user1["token"]}, json={"code": new_code})
+    assert response.status_code == 404
+
+    response = cl.put("/robots/1/", headers={"token": user2["token"]}, json={"code": new_code})
+    assert response.status_code == 403
+
+    response = cl.put("/robots/1/", headers={"token": user1["token"]}, json={"code": "int main(void)"})
+    assert response.status_code == 418
+
+    response = cl.put("/robots/1/", headers={"token": user1["token"]}, json={"code": new_code})
+    assert response.status_code == 200
+
+    response = cl.get("/robots/1/", headers={"token": user1["token"]})
+    assert response.status_code == 200
+    assert response.json()["code"] == new_code
+
