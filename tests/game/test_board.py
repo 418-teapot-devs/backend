@@ -112,6 +112,7 @@ def test_robot_invalid_respond():
 
 
 
+
 # @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 # def test_game_execute():
 #     b = Board(["test_id_bot", "test_aggressive_bot"])
