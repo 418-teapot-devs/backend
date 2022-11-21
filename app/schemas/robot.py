@@ -9,9 +9,11 @@ class RobotResponse(BaseModel):
     won_matches: int
     mmr: int
 
+
 class RobotDetails(BaseModel):
     robot_info: RobotResponse
     code: str
+
 
 class RobotCode(BaseModel):
     code: str

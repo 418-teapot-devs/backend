@@ -93,7 +93,7 @@ def test_robot_invalid_init():
     assert len(b.robots) == 0
 
 
-def tst_robot_invalid_respond():
+def test_robot_invalid_respond():
     class TimeoutOnRespond(IdBot):
         def respond(self):
             while True: pass
@@ -106,7 +106,8 @@ def tst_robot_invalid_respond():
     assert len(b.robots) == 2
 
     b.next_round()
-    assert len(b.robots) == 2
+    assert len(b.robots) == 0
+
 
 # @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 # def test_game_execute():
