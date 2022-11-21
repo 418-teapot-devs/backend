@@ -12,7 +12,7 @@ from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import JWT_ALGORITHM, create_access_token, get_user_and_subject
 from app.util.errors import *
-from app.util.mail import MAIL_FROM_NAME, MAIL_USERNAME, fm, send_verification_token
+from app.util.mail import MAIL_FROM_NAME, MAIL_USERNAME, fm, send_verification_token, send_recovery_mail
 from tests.testutil import register_random_users, random_ascii_string
 
 cl = TestClient(app)
@@ -135,9 +135,29 @@ def test_send_mail():
     fm.config.SUPPRESS_SEND = 1
     with fm.record_messages() as outbox:
         send_verification_token(user["email"], verify_token)
-        assert len(outbox) == 1
+        send_recovery_mail(user["email"], verify_token)
+        assert len(outbox) == 2
         assert outbox[0]["from"] == f"{MAIL_FROM_NAME} <{MAIL_USERNAME}>"
+        assert outbox[1]["from"] == f"{MAIL_FROM_NAME} <{MAIL_USERNAME}>"
         assert outbox[0]["to"] == user["email"]
+        assert outbox[1]["to"] == user["email"]
+
+
+def test_invalid_verify():
+    fake_tokens = [
+        ("hola", INVALID_TOKEN_ERROR),
+        (
+            create_access_token(
+                {"sub": "login", "user": "alvaro"}, timedelta(hours=1.0)
+            ),
+            INVALID_TOKEN_ERROR,
+        ),
+    ]
+
+    for token, error in fake_tokens:
+        response = cl.get(f"/users/verify/?token={token}")
+        assert response.status_code == error.status_code
+        assert response.json()["detail"] == error.detail
 
 
 def test_verify():
@@ -265,13 +285,28 @@ def test_default_robots():
 
 
 def test_invalid_get_profile():
-    fake_token = create_access_token(
-        {"sub": "login", "username": "alvaro"}, timedelta(hours=1.0)
-    )
-    tok_header = {"token": fake_token}
+    fake_tokens = [
+        ("hola", INVALID_TOKEN_ERROR),
+        (
+            create_access_token(
+                {"sub": "login", "user": "alvaro"}, timedelta(hours=1.0)
+            ),
+            INVALID_TOKEN_ERROR,
+        ),
+        (
+            create_access_token(
+                {"sub": "login", "username": "alvaro"}, timedelta(hours=1.0)
+            ),
+            USER_NOT_FOUND_ERROR,
+        ),
+    ]
 
-    response = cl.get("/users/profile/", headers=tok_header)
-    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
+    for token, error in fake_tokens:
+        tok_header = {"token": token}
+
+        response = cl.get("/users/profile/", headers=tok_header)
+        assert response.status_code == error.status_code
+        assert response.json()["detail"] == error.detail
 
 
 def test_get_profile():
