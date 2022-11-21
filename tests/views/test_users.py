@@ -12,8 +12,14 @@ from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import JWT_ALGORITHM, create_access_token, get_user_and_subject
 from app.util.errors import *
-from app.util.mail import MAIL_FROM_NAME, MAIL_USERNAME, fm, send_verification_token, send_recovery_mail
-from tests.testutil import register_random_users, random_ascii_string
+from app.util.mail import (
+    MAIL_FROM_NAME,
+    MAIL_USERNAME,
+    fm,
+    send_recovery_mail,
+    send_verification_token,
+)
+from tests.testutil import random_ascii_string, register_random_users
 
 cl = TestClient(app)
 
@@ -492,8 +498,11 @@ def test_reset_password_bad_token():
     )
 
     # try to recover using old password
-    response = cl.put("/users/reset_password/", headers={"token": recover_token},
-                      json={"new_password": "Aa123456"})
+    response = cl.put(
+        "/users/reset_password/",
+        headers={"token": recover_token},
+        json={"new_password": "Aa123456"},
+    )
     assert response.status_code == INVALID_TOKEN_ERROR.status_code
     assert response.json()["detail"] == INVALID_TOKEN_ERROR.detail
 
@@ -507,8 +516,11 @@ def test_recover_password_invalid_pwd():
     )
 
     # try to recover using old password
-    response = cl.put("/users/reset_password/", headers={"token": recover_token},
-                      json={"new_password": "soup"})
+    response = cl.put(
+        "/users/reset_password/",
+        headers={"token": recover_token},
+        json={"new_password": "soup"},
+    )
     assert response.status_code == 422
 
 
@@ -536,20 +548,29 @@ def test_recover_password():
     )
 
     # try to recover using old password
-    response = cl.put("/users/reset_password/", headers={"token": recover_token},
-                      json={"new_password": register_form["password"]})
+    response = cl.put(
+        "/users/reset_password/",
+        headers={"token": recover_token},
+        json={"new_password": register_form["password"]},
+    )
     assert response.status_code == CURRENT_PASSWORD_EQUAL_NEW_PASSWORD.status_code
     assert response.json()["detail"] == CURRENT_PASSWORD_EQUAL_NEW_PASSWORD.detail
 
     password = "Aa123456"
-    response = cl.put("/users/reset_password/", headers={"token": recover_token},
-                      json={"new_password": password})
+    response = cl.put(
+        "/users/reset_password/",
+        headers={"token": recover_token},
+        json={"new_password": password},
+    )
     assert response.status_code == 200
 
     # try to login using already changed old password
     response = cl.post(
         "/users/login/",
-        json={"username": register_form["username"], "password": register_form["password"]},
+        json={
+            "username": register_form["username"],
+            "password": register_form["password"],
+        },
     )
     assert response.status_code == 401
 

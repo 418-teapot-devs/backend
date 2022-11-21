@@ -12,16 +12,16 @@ from app.schemas.user import (
     ChangePassWord,
     Login,
     LoginResponse,
+    Recover,
     Register,
+    ResetPassword,
     Token,
     UserProfile,
-    Recover,
-    ResetPassword,
 )
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import create_access_token, get_current_user, get_user_and_subject
 from app.util.errors import *
-from app.util.mail import send_verification_token, send_recovery_mail
+from app.util.mail import send_recovery_mail, send_verification_token
 
 VERIFY_TOKEN_EXPIRE_DAYS = 1.0
 LOGIN_TOKEN_EXPIRE_DAYS = 7.0
@@ -219,7 +219,7 @@ def reset_password(form_data: ResetPassword, token: str = Header()):
         user = User.get(name=username)
 
         if not user or subject != "recovery":
-             raise INVALID_TOKEN_ERROR
+            raise INVALID_TOKEN_ERROR
 
         if password_context.verify(form_data.new_password, user.password):
             raise CURRENT_PASSWORD_EQUAL_NEW_PASSWORD
