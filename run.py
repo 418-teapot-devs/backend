@@ -19,7 +19,7 @@ if __name__ == "__main__":
     if test:
         cov = coverage.Coverage(omit=["tests/*"])
         cov.start()
-        pytest.main(["-vvx"] + testpaths)
+        pytest.main(["-vvx", "--ignore-glob=tests/assets/*"] + testpaths)
         cov.stop()
         cov.save()
         cov.html_report()

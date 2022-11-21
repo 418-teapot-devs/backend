@@ -61,6 +61,7 @@ def create_random_robots(token, count):
 
         tok_header = {"token": token}
 
+        robot_code.seek(0)
         response = cl.post(
             f"/robots/?name={quote_plus(robotname)}",
             headers=tok_header,

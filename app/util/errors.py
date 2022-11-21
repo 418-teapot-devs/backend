@@ -40,9 +40,29 @@ MATCH_PASSWORD_INCORRECT_ERROR = HTTPException(
     status_code=403, detail="Match password is incorrect"
 )
 
-INVALID_ROBOT_FORMAT_ERROR = HTTPException(
+ROBOT_CODE_UNSAFE_ERROR = HTTPException(
     status_code=418,
-    detail="PyRobots run on the python interpreter but no python code was supplied",
+    detail="Forbidden functions or imports found in code",
+)
+
+ROBOT_CODE_SYNTAX_ERROR = HTTPException(
+    status_code=418,
+    detail="Syntax error",
+)
+
+ROBOT_CODE_CLASSES_ERROR = HTTPException(
+    status_code=418,
+    detail="Code must define exactly one class that inherits from Robot",
+)
+
+ROBOT_CODE_WAW_ERROR = HTTPException(
+    status_code=418,
+    detail="Invalid name for method or attribute of robot",
+)
+
+ROBOT_CODE_UNIMPLEMENTED_ERROR = HTTPException(
+    status_code=418,
+    detail="Methods initialize or respond not implemented",
 )
 
 INVALID_PICTURE_FORMAT_ERROR = HTTPException(

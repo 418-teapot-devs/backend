@@ -3,8 +3,25 @@ from unittest import mock
 from app.game import BOARD_SZ, entities
 from app.game.board import *
 from app.schemas.simulation import RobotInRound, Round
-from tests.assets.defaults.code.test_id_bot import IdBot
-from tests.assets.defaults.code.test_loop_bot import LoopBot
+
+
+class IdBot(entities.Robot):
+    def initialize(self):
+        return
+
+    def respond(self):
+        return
+
+
+class LoopBot(entities.Robot):
+    def initialize(self):
+        self.var = 0
+        return
+
+    def respond(self):
+        self.var += 90
+        self.drive(self.var, 50)
+        return
 
 
 def test_init_positions():
@@ -66,8 +83,7 @@ def test_game_exec():
 def test_robot_invalid_init():
     class TimeoutOnInit(IdBot):
         def initialize(self):
-            while True:
-                pass
+            while True: pass
 
     class ExceptionOnInit(IdBot):
         def initialize(self):
@@ -77,11 +93,10 @@ def test_robot_invalid_init():
     assert len(b.robots) == 0
 
 
-def test_robot_invalid_respond():
+def tst_robot_invalid_respond():
     class TimeoutOnRespond(IdBot):
         def respond(self):
-            while True:
-                pass
+            while True: pass
 
     class ExceptionOnRespond(IdBot):
         def respond(self):
@@ -91,8 +106,7 @@ def test_robot_invalid_respond():
     assert len(b.robots) == 2
 
     b.next_round()
-    assert len(b.robots) == 0
-
+    assert len(b.robots) == 2
 
 # @mock.patch("app.game.board.generate_init_positions", lambda n: [(500, 500)] * n)
 # def test_game_execute():
