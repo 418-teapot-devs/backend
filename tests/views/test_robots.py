@@ -62,7 +62,7 @@ def test_check_invalid_syntax():
     [user] = register_random_users(1)
     token = user["token"]
     response = cl.post(
-            f"/robots/?name=nofunca", headers={"token": token}, files=[("code", "robot._)")]
+        f"/robots/?name=nofunca", headers={"token": token}, files=[("code", "robot._)")]
     )
     assert response.status_code == 418
     assert response.json()["detail"] == "Syntax error"
@@ -80,54 +80,58 @@ def test_check_imports():
     [user] = register_random_users(1)
     token = user["token"]
     srcs = [
-    "import os\n" + base_src,
-    "import importlib as i\n" + base_src,
-    "from ..app.game import entities",
-    "from os import chroot\n" + base_src,
+        "import os\n" + base_src,
+        "import importlib as i\n" + base_src,
+        "from ..app.game import entities",
+        "from os import chroot\n" + base_src,
     ]
 
     for src in srcs:
         response = cl.post(
-                f"/robots/?name=bot", headers={"token": token}, files=[("code", src)]
-            )
+            f"/robots/?name=bot", headers={"token": token}, files=[("code", src)]
+        )
         assert response.status_code == 418
-        assert response.json()["detail"] == "Forbidden functions or imports found in code"
+        assert (
+            response.json()["detail"] == "Forbidden functions or imports found in code"
+        )
 
 
 def test_check_builtins():
     [user] = register_random_users(1)
     token = user["token"]
     srcs = [
-    "__import__(\"os\")\n" + base_src,
-    "v = datetime.__vars__\n" + base_src,
-    "import numpy\ngetattr(numpy, \"__builtins__\")\n" + base_src,
-    "exec(\"import os\\ni = os.__builtins__.__import__\")\n" + base_src,
-    "open(\"randomfile\", \"w\").write(\"random stuff\")\n" + base_src,
-]
+        '__import__("os")\n' + base_src,
+        "v = datetime.__vars__\n" + base_src,
+        'import numpy\ngetattr(numpy, "__builtins__")\n' + base_src,
+        'exec("import os\\ni = os.__builtins__.__import__")\n' + base_src,
+        'open("randomfile", "w").write("random stuff")\n' + base_src,
+    ]
 
     for src in srcs:
         response = cl.post(
-                f"/robots/?name=bot", headers={"token": token}, files=[("code", src)]
-            )
+            f"/robots/?name=bot", headers={"token": token}, files=[("code", src)]
+        )
         assert response.status_code == 418
-        assert response.json()["detail"] == "Forbidden functions or imports found in code"
+        assert (
+            response.json()["detail"] == "Forbidden functions or imports found in code"
+        )
 
 
 def test_check_methods():
     [user] = register_random_users(1)
     token = user["token"]
-    src1 = "\n".join(base_src.splitlines()[:-2]) # class without a method
+    src1 = "\n".join(base_src.splitlines()[:-2])  # class without a method
     src2 = base_src + "    def get_damage(self):\n        self._dmg = 0\n"
 
     response = cl.post(
-            f"/robots/?name=bot", headers={"token": token}, files=[("code", src1)]
-        )
+        f"/robots/?name=bot", headers={"token": token}, files=[("code", src1)]
+    )
     assert response.status_code == 418
     assert response.json()["detail"] == "Methods initialize or respond not implemented"
 
     response = cl.post(
-            f"/robots/?name=bot", headers={"token": token}, files=[("code", src2)]
-        )
+        f"/robots/?name=bot", headers={"token": token}, files=[("code", src2)]
+    )
     assert response.status_code == 418
     assert response.json()["detail"] == "Invalid name for method or attribute of robot"
 
@@ -139,16 +143,22 @@ def test_check_classes():
     src2 = base_src + "class A(Robot, Exception):\n    def initialize(self): pass\n"
 
     response = cl.post(
-            f"/robots/?name=bot", headers={"token": token}, files=[("code", src1)]
-        )
+        f"/robots/?name=bot", headers={"token": token}, files=[("code", src1)]
+    )
     assert response.status_code == 418
-    assert response.json()["detail"] == "Code must define exactly one class that inherits from Robot"
+    assert (
+        response.json()["detail"]
+        == "Code must define exactly one class that inherits from Robot"
+    )
 
     response = cl.post(
-            f"/robots/?name=bot", headers={"token": token}, files=[("code", src2)]
-        )
+        f"/robots/?name=bot", headers={"token": token}, files=[("code", src2)]
+    )
     assert response.status_code == 418
-    assert response.json()["detail"] == "Code must define exactly one class that inherits from Robot"
+    assert (
+        response.json()["detail"]
+        == "Code must define exactly one class that inherits from Robot"
+    )
 
 
 def test_get_robots():
@@ -268,3 +278,62 @@ def test_robot_results():
         assert robot.played_matches == 1
         assert robot.mmr == expected_mmr
         assert robot.won_matches == expected_won_matches
+
+
+def test_get_robot_details():
+    [user1, user2] = register_random_users(2)
+    fake_token = create_access_token(
+        {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
+    )
+
+    response = cl.get("/robots/1/", headers={"token": fake_token})
+    assert response.status_code == 404
+
+    response = cl.get("/robots/10000/", headers={"token": user1["token"]})
+    assert response.status_code == 404
+
+    response = cl.get("/robots/1/", headers={"token": user2["token"]})
+    assert response.status_code == 403
+
+    response = cl.get("/robots/1/", headers={"token": user1["token"]})
+    assert response.status_code == 200
+    assert len(response.json()["code"]) > 0
+
+
+def test_update_robot_code():
+    [user1, user2] = register_random_users(2)
+    fake_token = create_access_token(
+        {"sub": "login", "username": "pepito"}, timedelta(hours=1.0)
+    )
+
+    with open("tests/assets/defaults/code/test_id_bot.py") as f:
+        new_code = f.read()
+
+    response = cl.put(
+        "/robots/1/", headers={"token": fake_token}, json={"code": new_code}
+    )
+    assert response.status_code == 404
+
+    response = cl.put(
+        "/robots/10/", headers={"token": user1["token"]}, json={"code": new_code}
+    )
+    assert response.status_code == 404
+
+    response = cl.put(
+        "/robots/1/", headers={"token": user2["token"]}, json={"code": new_code}
+    )
+    assert response.status_code == 403
+
+    response = cl.put(
+        "/robots/1/", headers={"token": user1["token"]}, json={"code": "int main(void)"}
+    )
+    assert response.status_code == 418
+
+    response = cl.put(
+        "/robots/1/", headers={"token": user1["token"]}, json={"code": new_code}
+    )
+    assert response.status_code == 200
+
+    response = cl.get("/robots/1/", headers={"token": user1["token"]})
+    assert response.status_code == 200
+    assert response.json()["code"] == new_code
