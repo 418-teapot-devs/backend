@@ -3,7 +3,7 @@ from pony.orm import commit, db_session, select
 
 from app.models.robot import Robot
 from app.models.user import User
-from app.schemas.robot import RobotResponse
+from app.schemas.robot import RobotDetails, RobotResponse
 from app.util.assets import ASSETS_DIR, get_robot_avatar
 from app.util.auth import get_current_user
 from app.util.check_code import check_code
@@ -72,3 +72,33 @@ def create_robot(
     if avatar:
         with open(f"{ASSETS_DIR}/robots/avatars/{robot.id}.png", "wb") as f:
             f.write(avatar.file.read())
+
+
+@router.get("/{robot_id}/")
+def get_robot_details(robot_id: int, token: str = Header()):
+    username = get_current_user(token)
+
+    with db_session:
+
+        user = User.get(name=username)
+        if user is None:
+            raise USER_NOT_FOUND_ERROR
+
+        robot = Robot.get(id=robot_id)
+        if robot is None:
+            raise ROBOT_NOT_FOUND_ERROR
+        if robot.owner != user:
+            raise ROBOT_NOT_FROM_USER_ERROR
+
+        info = RobotResponse(
+            robot_id=robot.id,
+            name=robot.name,
+            avatar_url=get_robot_avatar(robot),
+            played_matches=robot.played_matches,
+            won_matches=robot.won_matches,
+            mmr=robot.mmr,
+        )
+
+    with open(f"app/assets/robots/code/{robot_id}.py") as code:
+        code.readline()  # do not send line with `Robot` import
+        return RobotDetails(robot_info=info, code=code.read())
