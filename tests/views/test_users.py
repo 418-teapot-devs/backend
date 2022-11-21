@@ -12,8 +12,14 @@ from app.models.user import User
 from app.util.assets import ASSETS_DIR, get_user_avatar
 from app.util.auth import JWT_ALGORITHM, create_access_token, get_user_and_subject
 from app.util.errors import *
-from app.util.mail import MAIL_FROM_NAME, MAIL_USERNAME, fm, send_verification_token
-from tests.testutil import register_random_users
+from app.util.mail import (
+    MAIL_FROM_NAME,
+    MAIL_USERNAME,
+    fm,
+    send_recovery_mail,
+    send_verification_token,
+)
+from tests.testutil import random_ascii_string, register_random_users
 
 cl = TestClient(app)
 
@@ -91,7 +97,7 @@ def test_login():
     assert response.status_code == 201
 
     response = cl.post(
-        "/users/login",
+        "/users/login/",
         json={"username": "leo10", "password": "Burrito21"},
     )
     assert response.status_code == 200
@@ -117,7 +123,7 @@ def test_login():
     ]
 
     for params, status_code, expected_msg in test_jsons:
-        response = cl.post("/users/login", json=params)
+        response = cl.post("/users/login/", json=params)
         assert response.status_code == status_code
 
 
@@ -135,9 +141,29 @@ def test_send_mail():
     fm.config.SUPPRESS_SEND = 1
     with fm.record_messages() as outbox:
         send_verification_token(user["email"], verify_token)
-        assert len(outbox) == 1
+        send_recovery_mail(user["email"], verify_token)
+        assert len(outbox) == 2
         assert outbox[0]["from"] == f"{MAIL_FROM_NAME} <{MAIL_USERNAME}>"
+        assert outbox[1]["from"] == f"{MAIL_FROM_NAME} <{MAIL_USERNAME}>"
         assert outbox[0]["to"] == user["email"]
+        assert outbox[1]["to"] == user["email"]
+
+
+def test_invalid_verify():
+    fake_tokens = [
+        ("hola", INVALID_TOKEN_ERROR),
+        (
+            create_access_token(
+                {"sub": "login", "user": "alvaro"}, timedelta(hours=1.0)
+            ),
+            INVALID_TOKEN_ERROR,
+        ),
+    ]
+
+    for token, error in fake_tokens:
+        response = cl.get(f"/users/verify/?token={token}")
+        assert response.status_code == error.status_code
+        assert response.json()["detail"] == error.detail
 
 
 def test_verify():
@@ -158,7 +184,7 @@ def test_verify():
         "username": register_form["username"],
         "password": register_form["password"],
     }
-    response = cl.post("/users/login", json=login_form)
+    response = cl.post("/users/login/", json=login_form)
     assert response.status_code == USER_NOT_VERIFIED_ERROR.status_code
 
     data = response.json()
@@ -172,7 +198,7 @@ def test_verify():
     response = cl.get(f"/users/verify/?token={token_data}")
     # cannot check status_code because it depends in frontend being mounted
 
-    response = cl.post("/users/login", json=login_form)
+    response = cl.post("/users/login/", json=login_form)
     assert response.status_code == 200
 
 
@@ -265,13 +291,28 @@ def test_default_robots():
 
 
 def test_invalid_get_profile():
-    fake_token = create_access_token(
-        {"sub": "login", "username": "alvaro"}, timedelta(hours=1.0)
-    )
-    tok_header = {"token": fake_token}
+    fake_tokens = [
+        ("hola", INVALID_TOKEN_ERROR),
+        (
+            create_access_token(
+                {"sub": "login", "user": "alvaro"}, timedelta(hours=1.0)
+            ),
+            INVALID_TOKEN_ERROR,
+        ),
+        (
+            create_access_token(
+                {"sub": "login", "username": "alvaro"}, timedelta(hours=1.0)
+            ),
+            USER_NOT_FOUND_ERROR,
+        ),
+    ]
 
-    response = cl.get("/users/profile/", headers=tok_header)
-    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
+    for token, error in fake_tokens:
+        tok_header = {"token": token}
+
+        response = cl.get("/users/profile/", headers=tok_header)
+        assert response.status_code == error.status_code
+        assert response.json()["detail"] == error.detail
 
 
 def test_get_profile():
@@ -428,7 +469,7 @@ def test_put_password():
     assert response.status_code == 200
 
     response = cl.post(
-        "/users/login",
+        "/users/login/",
         json={
             "username": "maciel",
             "password": "Burrito21",
@@ -438,11 +479,103 @@ def test_put_password():
     assert response.status_code == NON_EXISTANT_USER_OR_PASSWORD_ERROR.status_code
 
     response = cl.post(
-        "/users/login",
+        "/users/login/",
         json={
             "username": "maciel",
             "password": "Burrito429",
             "email": "midulcelechona@test.com",
         },
+    )
+    assert response.status_code == 200
+
+
+def test_reset_password_bad_token():
+    [user] = register_random_users(1)
+
+    recover_token = create_access_token(
+        {"sub": "login", "username": user["username"]},
+        timedelta(hours=1.0),
+    )
+
+    # try to recover using old password
+    response = cl.put(
+        "/users/reset_password/",
+        headers={"token": recover_token},
+        json={"new_password": "Aa123456"},
+    )
+    assert response.status_code == INVALID_TOKEN_ERROR.status_code
+    assert response.json()["detail"] == INVALID_TOKEN_ERROR.detail
+
+
+def test_recover_password_invalid_pwd():
+    [user] = register_random_users(1)
+
+    recover_token = create_access_token(
+        {"sub": "recovery", "username": user["username"]},
+        timedelta(hours=1.0),
+    )
+
+    # try to recover using old password
+    response = cl.put(
+        "/users/reset_password/",
+        headers={"token": recover_token},
+        json={"new_password": "soup"},
+    )
+    assert response.status_code == 422
+
+
+def test_recover_password():
+    register_form = {
+        "username": "alvaro",
+        "password": f"1Aa{random_ascii_string(5)}",
+        "email": "alvaro.schachner@mi.unc.edu.ar",
+    }
+
+    response = cl.post(f"/users/{json_to_queryparams(register_form)}")
+    assert response.status_code == 201
+
+    # try to use email that isn't from any user
+    response = cl.put("/users/recover/", json={"email": "a@b.c"})
+    assert response.status_code == EMAIL_DOESNT_BELONG_TO_USER.status_code
+    assert response.json()["detail"] == EMAIL_DOESNT_BELONG_TO_USER.detail
+
+    response = cl.put("/users/recover/", json={"email": register_form["email"]})
+    assert response.status_code == 200
+
+    recover_token = create_access_token(
+        {"sub": "recovery", "username": register_form["username"]},
+        timedelta(hours=1.0),
+    )
+
+    # try to recover using old password
+    response = cl.put(
+        "/users/reset_password/",
+        headers={"token": recover_token},
+        json={"new_password": register_form["password"]},
+    )
+    assert response.status_code == CURRENT_PASSWORD_EQUAL_NEW_PASSWORD.status_code
+    assert response.json()["detail"] == CURRENT_PASSWORD_EQUAL_NEW_PASSWORD.detail
+
+    password = "Aa123456"
+    response = cl.put(
+        "/users/reset_password/",
+        headers={"token": recover_token},
+        json={"new_password": password},
+    )
+    assert response.status_code == 200
+
+    # try to login using already changed old password
+    response = cl.post(
+        "/users/login/",
+        json={
+            "username": register_form["username"],
+            "password": register_form["password"],
+        },
+    )
+    assert response.status_code == 401
+
+    response = cl.post(
+        "/users/login/",
+        json={"username": register_form["username"], "password": password},
     )
     assert response.status_code == 200

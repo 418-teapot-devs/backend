@@ -49,8 +49,22 @@ class LoginResponse(BaseModel):
     profile: UserProfile
 
 
+class Recover(BaseModel):
+    email: str
+
+
 class ChangePassWord(BaseModel):
     old_password: str
+    new_password: str
+
+    @validator("new_password")
+    def password_is_correct(cls, v):
+        if not pass_validator.validate(v):
+            raise VALUE_NOT_VALID_PASSWORD
+        return v
+
+
+class ResetPassword(BaseModel):
     new_password: str
 
     @validator("new_password")

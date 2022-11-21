@@ -1,4 +1,6 @@
 from app.game.entities import Robot
+
+
 class LoopBot(Robot):
     def initialize(self):
         self.var = 0

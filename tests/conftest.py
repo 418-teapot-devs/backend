@@ -6,13 +6,17 @@ from app.models import User, db
 
 
 @pytest.fixture(autouse=True)
-def verify_bypass(monkeypatch):
+def noemail(monkeypatch):
     def verify(email, _):
         with db_session:
             user = User.get(email=email)
             user.is_verified = True
 
+    def recover(_, __):
+        return None
+
     monkeypatch.setattr(app.views.users, "send_verification_token", verify)
+    monkeypatch.setattr(app.views.users, "send_recovery_mail", recover)
 
 
 @pytest.fixture(autouse=True)

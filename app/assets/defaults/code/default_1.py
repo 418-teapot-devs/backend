@@ -1,4 +1,6 @@
 from app.game.entities import Robot
+
+
 class AttackRobot(Robot):
     def initialize(self):
         self.var = 0
