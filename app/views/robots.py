@@ -3,7 +3,7 @@ from pony.orm import commit, db_session, select
 
 from app.models.robot import Robot
 from app.models.user import User
-from app.schemas.robot import RobotDetails, RobotResponse
+from app.schemas.robot import RobotCode, RobotDetails, RobotResponse
 from app.util.assets import ASSETS_DIR, get_robot_avatar
 from app.util.auth import get_current_user
 from app.util.check_code import check_code
@@ -102,3 +102,30 @@ def get_robot_details(robot_id: int, token: str = Header()):
     with open(f"app/assets/robots/code/{robot_id}.py") as code:
         code.readline()  # do not send line with `Robot` import
         return RobotDetails(robot_info=info, code=code.read())
+
+
+@router.put("/{robot_id}/", status_code=200)
+def update_robot_code(robot_id: int, code: RobotCode, token: str = Header()):
+    username = get_current_user(token)
+
+    with db_session:
+
+        user = User.get(name=username)
+        if user is None:
+            raise USER_NOT_FOUND_ERROR
+
+        robot = Robot.get(id=robot_id)
+        if robot is None:
+            raise ROBOT_NOT_FOUND_ERROR
+        if robot.owner != user:
+            raise ROBOT_NOT_FROM_USER_ERROR
+
+    try:
+        pass
+        check_code(code.code)
+    except SyntaxError:
+        raise SyntaxError
+
+    with open(f"{ASSETS_DIR}/robots/code/{robot_id}.py", "w") as f:
+        f.write("from app.game.entities import Robot\n")
+        f.write(code.code)

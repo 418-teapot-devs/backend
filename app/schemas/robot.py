@@ -12,3 +12,6 @@ class RobotResponse(BaseModel):
 class RobotDetails(BaseModel):
     robot_info: RobotResponse
     code: str
+
+class RobotCode(BaseModel):
+    code: str
