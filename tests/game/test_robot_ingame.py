@@ -96,24 +96,50 @@ def test_bot_wall():
     assert r1.get_damage() == COLLISION_DMG
 
 
-def test_bot_scan():
+def test_scan_no_robots():
     r = NoMove(1, 0, (500, 500))
-    positions = [
-        (500, 750),
-        (700, 500),
-        (100, 500),
-        (500, 400),
-    ]
-    others = [NoMove(i, i + 1, pos) for i, pos in enumerate(positions)]
-
-    r._scan([r._pos for r in others])
+    r.point_scanner(175, 5)
+    r._scan([])
     assert r.scanned() == math.inf
 
-    test_cases = [(45, 5, math.inf), (90, 10, 250), (90, 100, 200), (-45, 300, 100)]
-    for dir, resolution, expected in test_cases:
-        r.point_scanner(dir, resolution)
-        r._scan([r._pos for r in others])
-        assert r.scanned() == expected
+
+def test_scan_one_found():
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(63, 3)
+    r._scan([(600, 725)])
+    assert r.scanned() == math.dist((400, 300), (600, 725))
+
+    r.point_scanner(302, 10)
+    r._scan([(409, 290)])
+    assert r.scanned() == math.dist((400, 300), (409, 290))
+
+
+def test_scan_none_found():
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(302, 10)
+    r._scan([(100, 100)])
+    assert r.scanned() == math.inf
+
+
+def test_scan_many():
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(302, 10)
+    r._scan([(409, 290), (406, 286), (415, 285)])
+    assert r.scanned() == math.dist((400, 300), (409, 290))
+
+
+def test_scan_res_underflow():
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(1, 10)
+    r._scan([(410, 299)])
+    assert r.scanned() == math.dist((400, 300), (410, 299))
+
+
+def test_scan_res_overflow():
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(356, 10)
+    r._scan([(410, 301)])
+    assert r.scanned() == math.dist((400, 300), (410, 301))
 
 
 def test_bot_cannon():
