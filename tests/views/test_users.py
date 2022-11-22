@@ -242,21 +242,21 @@ def test_default_robots():
     token_header = {"token": data["token"]}
 
     with db_session:
-        assert Robot.exists(name="default_1")
+        assert Robot.exists(name="Rabbot")
 
     expected_result = [
         {
-            "robot_id": 1,
-            "name": "default_1",
-            "avatar_url": "/assets/avatars/robot/1.png",
+            "robot_id": 2,
+            "name": "LooPy",
+            "avatar_url": "/assets/avatars/robot/2.png",
             "won_matches": 0,
             "played_matches": 0,
             "mmr": 0,
         },
         {
-            "robot_id": 2,
-            "name": "default_2",
-            "avatar_url": "/assets/avatars/robot/2.png",
+            "robot_id": 1,
+            "name": "Rabbot",
+            "avatar_url": "/assets/avatars/robot/1.png",
             "won_matches": 0,
             "played_matches": 0,
             "mmr": 0,

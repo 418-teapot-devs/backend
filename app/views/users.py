@@ -73,8 +73,8 @@ def register(bg_tasks: BackgroundTasks, schema: Register = Depends(), avatar: Up
         )
 
         # Create deafults robots
-        default_1 = Robot(owner=user, name="default_1", has_avatar=True)
-        default_2 = Robot(owner=user, name="default_2", has_avatar=True)
+        default_1 = Robot(owner=user, name="Rabbot", has_avatar=True)
+        default_2 = Robot(owner=user, name="LooPy", has_avatar=True)
         commit()
 
         copyfile(
