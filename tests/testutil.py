@@ -42,6 +42,10 @@ def register_random_users(count):
         response = cl.post(f"/users/{json_to_queryparams(json_form)}")
         assert response.status_code == 201
 
+        login_data = {"username": username, "password": password}
+        response = cl.post("/users/login/", json=login_data)
+        assert response.status_code == 200
+
         data = response.json()
 
         users[i]["username"] = username
@@ -54,13 +58,14 @@ def register_random_users(count):
 
 def create_random_robots(token, count):
     robots = [{"id": None, "name": None} for _ in range(count)]
-    robot_code = open("tests/assets/robots/code/test_id_bot.py")
+    robot_code = open("tests/assets/defaults/code/test_id_bot.py")
 
     for i in range(count):
         robotname = f"{i}" + random_ascii_string(9)
 
         tok_header = {"token": token}
 
+        robot_code.seek(0)
         response = cl.post(
             f"/robots/?name={quote_plus(robotname)}",
             headers=tok_header,
@@ -99,6 +104,8 @@ def create_random_matches(token, count):
             robot_count=1,
             max_players=4,
             min_players=2,
+            game_count=20,
+            round_count=5000,
             password=password,
         )
         commit()

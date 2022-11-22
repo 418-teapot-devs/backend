@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Header, HTTPException
 from pony.orm import db_session
 
-from app.game.board import Board
+from app.game.executor import Executor
 from app.models.robot import Robot
 from app.models.user import User
 from app.schemas.match import RobotInMatch
 from app.schemas.simulation import SimulationRequest, SimulationResponse
 from app.util.assets import ASSETS_DIR, get_robot_avatar
 from app.util.auth import get_current_user
+from app.util.errors import *
 
 DEFAULT_ROUNDS = 100
 BOT_DIR = f"{ASSETS_DIR}/robots"
@@ -24,12 +25,12 @@ def simulate(schema: SimulationRequest, token: str = Header()):
     with db_session:
         cur_user = User.get(name=username)
         if cur_user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise USER_NOT_FOUND_ERROR
 
         for i, bot in enumerate(schema.robots):
             r = Robot.get(id=bot)
             if r is None:
-                raise HTTPException(status_code=404, detail="Robot not found")
+                raise ROBOT_NOT_FOUND_ERROR
             if r.owner != cur_user:
                 raise HTTPException(
                     status_code=403,
@@ -43,12 +44,5 @@ def simulate(schema: SimulationRequest, token: str = Header()):
 
     rounds = schema.rounds if schema.rounds is not None else DEFAULT_ROUNDS
 
-    b = Board(schema.robots)
-    g = [b.to_round_schema()]
-    for _ in range(rounds):
-        b.next_round()
-        g.append(b.to_round_schema())
-        if len(b.robots) == 0 and len(b.missiles) == 0:
-            break
-
-    return SimulationResponse(robots=robots, rounds=g)
+    exec = Executor(schema.robots)
+    return SimulationResponse(robots=robots, rounds=exec.simulate(rounds))

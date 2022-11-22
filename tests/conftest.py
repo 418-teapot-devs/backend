@@ -1,6 +1,22 @@
 import pytest
+from pony.orm import db_session
 
-from app.models.database import db
+import app.views.users
+from app.models import User, db
+
+
+@pytest.fixture(autouse=True)
+def noemail(monkeypatch):
+    def verify(email, _):
+        with db_session:
+            user = User.get(email=email)
+            user.is_verified = True
+
+    def recover(_, __):
+        return None
+
+    monkeypatch.setattr(app.views.users, "send_verification_token", verify)
+    monkeypatch.setattr(app.views.users, "send_recovery_mail", recover)
 
 
 @pytest.fixture(autouse=True)

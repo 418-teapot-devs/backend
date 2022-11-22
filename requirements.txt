@@ -12,3 +12,5 @@ cryptography==38.0.1
 python-multipart==0.0.5
 coverage==6.5.0
 websockets==10.4
+func-timeout==4.3.5
+fastapi-mail==1.2.0

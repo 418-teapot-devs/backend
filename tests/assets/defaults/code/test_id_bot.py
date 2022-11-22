@@ -1,6 +1,3 @@
-from app.game.robot import Robot
-
-
 class IdBot(Robot):
     def initialize(self):
         return

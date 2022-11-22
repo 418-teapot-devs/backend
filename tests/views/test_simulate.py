@@ -31,12 +31,16 @@ def test_invalid_simulation():
         response = cl.post(f"/users/{json_to_queryparams(u)}")
         assert response.status_code == 201
 
+        login_data = {"username": u["username"], "password": u["password"]}
+        response = cl.post("/users/login/", json=login_data)
+        assert response.status_code == 200
+
         data = response.json()
         tokens.append(data["token"])
 
     test_robots = [
-        ("cesco", open(f"{ASSETS_DIR}/robots/code/test_id_bot.py"), 201),
-        ("lueme", open(f"{ASSETS_DIR}/robots/code/test_loop_bot.py"), 201),
+        ("cesco", open(f"{ASSETS_DIR}/defaults/code/test_id_bot.py"), 201),
+        ("lueme", open(f"{ASSETS_DIR}/defaults/code/test_loop_bot.py"), 201),
     ]
 
     for robot_name, code, expected_code in test_robots:
@@ -49,7 +53,13 @@ def test_invalid_simulation():
         assert response.status_code == expected_code
 
     response = cl.get("/robots/", headers={"token": tokens[0]})
-    [cesco, lueme] = list(response.json())
+
+    [cesco, lueme] = list(
+        filter(
+            lambda d: d["name"] == "cesco" or d["name"] == "lueme",
+            list(response.json()),
+        )
+    )
     assert cesco["name"] == "cesco" and lueme["name"] == "lueme"
 
     simulations = [
@@ -87,12 +97,16 @@ def test_run_simulation():
     response = cl.post(f"/users/{json_to_queryparams(user)}")
     assert response.status_code == 201
 
+    login_data = {"username": user["username"], "password": user["password"]}
+    response = cl.post("/users/login/", json=login_data)
+    assert response.status_code == 200
+
     data = response.json()
     token = data["token"]
 
     test_robots = [
-        ("cesco", open(f"{ASSETS_DIR}/robots/code/test_id_bot.py"), 201),
-        ("lueme", open(f"{ASSETS_DIR}/robots/code/test_loop_bot.py"), 201),
+        ("cesco", open(f"{ASSETS_DIR}/defaults/code/test_id_bot.py"), 201),
+        ("lueme", open(f"{ASSETS_DIR}/defaults/code/test_loop_bot.py"), 201),
     ]
 
     for robot_name, code, expected_code in test_robots:
@@ -105,7 +119,12 @@ def test_run_simulation():
         assert response.status_code == expected_code
 
     response = cl.get("/robots/", headers={"token": token})
-    [cesco, lueme] = list(response.json())
+    [cesco, lueme] = list(
+        filter(
+            lambda d: d["name"] == "cesco" or d["name"] == "lueme",
+            list(response.json()),
+        )
+    )
     assert cesco["name"] == "cesco" and lueme["name"] == "lueme"
 
     simulations = [

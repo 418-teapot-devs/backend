@@ -1,5 +1,3 @@
-import sys
-
 from pony.orm import Database
 
 from app.dbconfig import *

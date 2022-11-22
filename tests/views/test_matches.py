@@ -1,17 +1,16 @@
 from datetime import timedelta
-from time import sleep
 
 from fastapi.testclient import TestClient
 from pony.orm import commit, db_session
 
 from app.main import app
-from app.models import Match, Robot, RobotMatchResult, User, db
+from app.models import Match, Robot, RobotMatchResult
 from app.util.auth import create_access_token
+from app.util.errors import *
 from tests.testutil import (
     create_random_matches,
     create_random_robots,
     json_to_queryparams,
-    random_ascii_string,
     register_random_users,
 )
 
@@ -19,6 +18,7 @@ cl = TestClient(app)
 
 
 def test_create_from_nonexistant_user():
+
     fake_token = create_access_token(
         {"sub": "login", "username": "leo"}, timedelta(hours=1.0)
     )
@@ -34,7 +34,7 @@ def test_create_from_nonexistant_user():
     }
 
     response = cl.post("/matches/", headers={"token": fake_token}, json=test_match)
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
 
 def test_get_from_nonexistant_user():
@@ -43,7 +43,7 @@ def test_get_from_nonexistant_user():
     )
 
     response = cl.get("/matches/1", headers={"token": fake_token})
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
 
 def test_get_with_qp_from_nonexistant_user():
@@ -52,399 +52,152 @@ def test_get_with_qp_from_nonexistant_user():
     )
 
     response = cl.get("/matches/?match_type=created", headers={"token": fake_token})
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
 
 def test_get_nonexistent_match():
-    user = {"username": "gino", "password": "GatoTruco123", "email": "k@gmail.com"}
+    [user] = register_random_users(1)
 
-    response = cl.post(f"/users/{json_to_queryparams(user)}")
-    assert response.status_code == 201
-
-    token = response.json()["token"]
-
-    response = cl.get("/matches/1", headers={"token": token})
-    assert response.status_code == 404
+    response = cl.get("/matches/1", headers={"token": user["token"]})
+    assert response.status_code == MATCH_NOT_FOUND_ERROR.status_code
 
 
 def test_created_invalid_match():
-    users = [
+    users = register_random_users(2)
+    robots = []
+    for i in range(2):
+        robots.append(create_random_robots(users[i]["token"], 1)[0])
+
+    matches = [
         {
-            "username": "alvaro",
-            "password": "MILC(man,i love ceimaf)123",
-            "email": "a@gemail.com",
+            "token": users[0]["token"],
+            "name": "partida1",
+            "robot_id": 7,
+            "max_players": 4,
+            "min_players": 2,
+            "rounds": 10000,
+            "games": 200,
+            "password": "algo",
+            "expected_code": ROBOT_NOT_FOUND_ERROR.status_code,
         },
         {
-            "username": "bruno",
-            "password": "h0la soy del Monse",
-            "email": "b@gemail.com",
+            "token": users[1]["token"],
+            "name": "partida1",
+            "robot_id": robots[0]["id"],
+            "max_players": 4,
+            "min_players": 2,
+            "rounds": 10000,
+            "games": 200,
+            "password": "algo",
+            "expected_code": 401,
         },
-        {"username": "leo", "password": "Burrito21", "email": "l@gemail.com"},
     ]
 
-    tokens = {}
-    for user in users:
-        response = cl.post(f"/users/{json_to_queryparams(user)}")
-        assert response.status_code == 201
+    for m in matches:
+        response = cl.post("/matches/", headers={"token": m["token"]}, json=m)
 
-        data = response.json()
-        tokens[user["username"]] = data["token"]
-
-    test_robots = [
-        ("daneel R olivaw", tokens["leo"], "identity.py", None, 201),
-        ("R giskard", tokens["leo"], "identity.py", None, 201),
-        ("Marvin", tokens["bruno"], "identity.py", None, 201),
-        ("deep thought", tokens["alvaro"], "identity.py", None, 201),
-    ]
-
-    for robot_name, token, code, avatar, expected_code in test_robots:
-        response = cl.post(
-            f"/robots/?name={robot_name}",
-            headers={"token": token},
-            files=[("code", code)],
-        )
-
-        assert response.status_code == expected_code
-
-    test_matches = [
-        (
-            "fadsfasdfasdfasdfasdfa",
-            "partida1",
-            "3",
-            2,
-            4,
-            10000,
-            200,
-            "algo",
-            401,
-        ),
-        (
-            tokens["bruno"],
-            "partida1",
-            "5134",
-            2,
-            4,
-            10000,
-            200,
-            "algo",
-            404,
-        ),
-        (
-            tokens["bruno"],
-            "partida1",
-            "1",
-            2,
-            4,
-            10000,
-            200,
-            "algo",
-            401,
-        ),
-    ]
-
-    for (
-        token,
-        m_name,
-        r_id,
-        min_p,
-        max_p,
-        games,
-        rounds,
-        password,
-        expected_code,
-    ) in test_matches:
-        response = cl.post(
-            "/matches/",
-            headers={"token": token},
-            json={
-                "name": m_name,
-                "robot_id": r_id,
-                "max_players": min_p,
-                "min_players": max_p,
-                "rounds": rounds,
-                "games": games,
-                "password": password,
-            },
-        )
-
-        assert response.status_code == expected_code
+        assert response.status_code == m["expected_code"]
 
 
 def test_post_created():
-    users = [
-        {"username": "bash", "password": "Reg2Loc_a", "email": "a1@gemail.com"},
+    users = register_random_users(2)
+    robots = []
+    for i in range(2):
+        robots.append(create_random_robots(users[i]["token"], 1)[0])
+
+    matches = [
         {
-            "username": "bruno1",
-            "password": "h0la soy del Monse",
-            "email": "b1@gemail.com",
+            "token": users[0]["token"],
+            "name": "partida1",
+            "robot_id": robots[0]["id"],
+            "max_players": 4,
+            "min_players": 2,
+            "rounds": 10000,
+            "games": 200,
+            "password": "algo",
+            "expected_code": 201,
         },
         {
-            "username": "leo1",
-            "password": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            "email": "l1@gemail.com",
+            "token": users[1]["token"],
+            "name": "partida2",
+            "robot_id": robots[1]["id"],
+            "max_players": 4,
+            "min_players": 2,
+            "rounds": 10000,
+            "games": 200,
+            "password": "algo",
+            "expected_code": 201,
         },
     ]
 
-    tokens = {}
-    for user in users:
-        response = cl.post(f"/users/{json_to_queryparams(user)}")
-        assert response.status_code == 201
-        data = response.json()
+    for m in matches:
+        response = cl.post("/matches/", headers={"token": m["token"]}, json=m)
+        assert response.status_code == m["expected_code"]
 
-        tokens[user["username"]] = data["token"]
-
-    test_robots = [
-        ("Raichu", tokens["leo1"], "identity.py", None, 201),
-        ("Zubat", tokens["leo1"], "identity.py", None, 201),
-        ("Moltres", tokens["bruno1"], "identity.py", None, 201),
-        ("Ribombee", tokens["bash"], "identity.py", None, 201),
-    ]
-
-    for robot_name, token, code, avatar, expected_code in test_robots:
-        response = cl.post(
-            f"/robots/?name={robot_name}",
-            headers={"token": token},
-            files=[("code", code)],
-        )
-
-        assert response.status_code == expected_code
-
-    test_matches = [
-        (
-            tokens["bruno1"],
-            "partida1",
-            3,
-            2,
-            4,
-            10000,
-            200,
-            "algo",
-            201,
-        ),
-        (
-            tokens["leo1"],
-            "partida2",
-            1,
-            2,
-            4,
-            5000,
-            100,
-            "algo",
-            201,
-        ),
-        (tokens["leo1"], "partida3", 2, 3, 4, 8540, 2, "algo", 201),
-    ]
-
-    for (
-        token,
-        m_name,
-        robot_id,
-        min_p,
-        max_p,
-        games,
-        rounds,
-        password,
-        expected_code,
-    ) in test_matches:
-        response = cl.post(
-            "/matches/",
-            headers={"token": token},
-            json={
-                "name": m_name,
-                "robot_id": robot_id,
-                "max_players": max_p,
-                "min_players": min_p,
-                "rounds": rounds,
-                "games": games,
-                "password": password,
-            },
-        )
-
-        assert response.status_code == expected_code
+        with db_session:
+            assert Match.exists(name=m["name"])
 
 
 def test_get_created():
-    users = [
-        {
-            "username": "alvaro2",
-            "password": "MILC(man,i love ceimaf)123",
-            "email": "a2@gemail.com",
-        },
-        {
-            "username": "bruno2",
-            "password": "h0la soy del Monse",
-            "email": "b2@gemail.com",
-        },
-        {"username": "leo2", "password": "Burrito21", "email": "l2@gemail.com"},
-    ]
+    users = register_random_users(2)
+    matches = create_random_matches(users[0]["token"], 2)
 
-    tokens = {}
-    for user in users:
-        response = cl.post(f"/users/{json_to_queryparams(user)}")
-        assert response.status_code == 201
-        data = response.json()
-
-        tokens[user["username"]] = data["token"]
-
-    test_robots = [
-        ("daneel R olivaw", tokens["leo2"], "identity.py", None, 201),
-        ("R giskard", tokens["leo2"], "identity.py", None, 201),
-        ("Marvin", tokens["bruno2"], "identity.py", None, 201),
-        ("deep thought", tokens["alvaro2"], "identity.py", None, 201),
-    ]
-
-    for robot_name, token, code, avatar, expected_code in test_robots:
-        response = cl.post(
-            f"/robots/?name={robot_name}",
-            headers={"token": token},
-            files=[("code", code)],
-        )
-
-        assert response.status_code == expected_code
-
-    test_matches = [
-        (
-            tokens["bruno2"],
-            "partida0",
-            3,
-            2,
-            4,
-            10000,
-            200,
-            "",
-            201,
-        ),
-        (
-            tokens["bruno2"],
-            "partida1",
-            3,
-            2,
-            4,
-            10000,
-            200,
-            "algo",
-            201,
-        ),
-        (
-            tokens["leo2"],
-            "partida2",
-            1,
-            2,
-            4,
-            5000,
-            100,
-            "",
-            201,
-        ),
-        (
-            tokens["leo2"],
-            "partida3",
-            2,
-            3,
-            4,
-            8540,
-            2,
-            "algo",
-            201,
-        ),
-    ]
-
-    for (
-        token,
-        m_name,
-        robot_id,
-        min_p,
-        max_p,
-        games,
-        rounds,
-        password,
-        expected_code,
-    ) in test_matches:
-        response = cl.post(
-            "/matches/",
-            headers={"token": token},
-            json={
-                "name": m_name,
-                "robot_id": robot_id,
-                "max_players": max_p,
-                "min_players": min_p,
-                "rounds": rounds,
-                "games": games,
-                "password": password,
+    with db_session:
+        m1 = Match.get(id=matches[0]["id"])
+        m2 = Match.get(id=matches[1]["id"])
+        r1 = list(m1.plays)[0]
+        r2 = list(m2.plays)[0]
+        get_matches = [
+            {
+                "name": m1.name,
+                "id": m1.id,
+                "host": {"username": users[0]["username"], "avatar_url": None},
+                "max_players": 4,
+                "min_players": 2,
+                "games": m1.game_count,
+                "rounds": m1.round_count,
+                "is_private": True,
+                "robots": {
+                    f"{r1.id}": {
+                        "name": r1.name,
+                        "avatar_url": None,
+                        "username": users[0]["username"],
+                    }
+                },
+                "state": "Lobby",
+                "results": None,
             },
-        )
+            {
+                "name": m2.name,
+                "id": m2.id,
+                "host": {"username": users[0]["username"], "avatar_url": None},
+                "max_players": 4,
+                "min_players": 2,
+                "games": m2.game_count,
+                "rounds": m2.round_count,
+                "is_private": True,
+                "robots": {
+                    f"{r2.id}": {
+                        "name": r2.name,
+                        "avatar_url": None,
+                        "username": users[0]["username"],
+                    }
+                },
+                "state": "Lobby",
+                "results": None,
+            },
+        ]
 
-        assert response.status_code == expected_code
-
-    test_get_matches = [
-        (
-            tokens["bruno2"],
-            "partida0",
-            1,
-            {"username": "bruno2", "avatar_url": None},
-            2,
-            4,
-            10000,
-            200,
-            False,
-            {"3": {"name": "Marvin", "avatar_url": None, "username": "bruno2"}},
-            "Lobby",
-            None,
-        ),
-        (
-            tokens["leo2"],
-            "partida3",
-            4,
-            {"username": "leo2", "avatar_url": None},
-            3,
-            4,
-            8540,
-            2,
-            True,
-            {"2": {"name": "R giskard", "avatar_url": None, "username": "leo2"}},
-            "Lobby",
-            None,
-        ),
-    ]
-
-    # TODO add test for when get should return []
     response = cl.get(
-        "/matches/?match_type=created", headers={"token": tokens["alvaro2"]}
+        "/matches/?match_type=created", headers={"token": users[0]["token"]}
     )
-
     assert response.status_code == 200
-    assert not response.json()
 
-    for i, (
-        token,
-        name,
-        id,
-        host,
-        max_p,
-        min_p,
-        games,
-        rounds,
-        is_private,
-        robots,
-        state,
-        results,
-    ) in enumerate(test_get_matches):
-        response = cl.get("/matches/?match_type=created", headers={"token": token})
-
-        assert response.status_code == 200
-        assert response.json()[i] == {
-            "name": name,
-            "id": id,
-            "host": host,
-            "max_players": min_p,
-            "min_players": max_p,
-            "games": games,
-            "rounds": rounds,
-            "is_private": is_private,
-            "robots": robots,
-            "state": state,
-            "results": results,
-        }
+    response = cl.get(
+        "/matches/?match_type=created", headers={"token": users[0]["token"]}
+    )
+    assert response.status_code == 200
+    assert response.json() == get_matches
 
 
 def test_join_nonexistant_match():
@@ -455,10 +208,10 @@ def test_join_nonexistant_match():
     tok_header = {"token": user["token"]}
 
     response = cl.put("/matches/1/join/", headers=tok_header, json=json_form)
-    assert response.status_code == 404
+    assert response.status_code == MATCH_NOT_FOUND_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match not found"
+    assert data["detail"] == MATCH_NOT_FOUND_ERROR.detail
 
 
 def test_join_match_nonexistant_robot():
@@ -471,10 +224,10 @@ def test_join_match_nonexistant_robot():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 404
+    assert response.status_code == ROBOT_NOT_FOUND_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Robot not found"
+    assert data["detail"] == ROBOT_NOT_FOUND_ERROR.detail
 
 
 def test_join_match_unowned_robot():
@@ -489,10 +242,10 @@ def test_join_match_unowned_robot():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 403
+    assert response.status_code == ROBOT_NOT_FROM_USER_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Robot does not belong to user"
+    assert data["detail"] == ROBOT_NOT_FROM_USER_ERROR.detail
 
 
 def test_join_match_already_started():
@@ -513,10 +266,10 @@ def test_join_match_already_started():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 403
+    assert response.status_code == MATCH_STARTED_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match has already started"
+    assert data["detail"] == MATCH_STARTED_ERROR.detail
 
 
 def test_join_full_match():
@@ -543,10 +296,10 @@ def test_join_full_match():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 403
+    assert response.status_code == MATCH_FULL_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match is full"
+    assert data["detail"] == MATCH_FULL_ERROR.detail
 
 
 def test_join_match_invalid_password():
@@ -561,10 +314,10 @@ def test_join_match_invalid_password():
     response = cl.put(
         f"/matches/{match['id']}/join/", headers=tok_header, json=json_form
     )
-    assert response.status_code == 403
+    assert response.status_code == MATCH_PASSWORD_INCORRECT_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match password is incorrect"
+    assert data["detail"] == MATCH_PASSWORD_INCORRECT_ERROR.detail
 
 
 def test_join_matches_empty_password():
@@ -678,10 +431,10 @@ def test_leave_nonexistant_match():
     tok_header = {"token": user["token"]}
 
     response = cl.put("/matches/1/leave/", headers=tok_header)
-    assert response.status_code == 404
+    assert response.status_code == MATCH_NOT_FOUND_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match not found"
+    assert data["detail"] == MATCH_NOT_FOUND_ERROR.detail
 
 
 def test_leave_not_joined_match():
@@ -691,10 +444,10 @@ def test_leave_not_joined_match():
     tok_header = {"token": users[1]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == USER_WAS_NOT_IN_MATCH_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "User was not in match"
+    assert data["detail"] == USER_WAS_NOT_IN_MATCH_ERROR.detail
 
 
 def test_leave_match_from_host():
@@ -704,10 +457,10 @@ def test_leave_match_from_host():
     tok_header = {"token": user["token"]}
 
     response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_CANNOT_BE_LEFT_BY_HOST_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Host cannot leave own match"
+    assert data["detail"] == MATCH_CANNOT_BE_LEFT_BY_HOST_ERROR.detail
 
 
 def test_leave_started_match():
@@ -730,10 +483,10 @@ def test_leave_started_match():
         commit()
 
     response = cl.put(f"/matches/{match['id']}/leave/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_STARTED_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match has already started"
+    assert data["detail"] == MATCH_STARTED_ERROR.detail
 
 
 def test_leave_match():
@@ -804,7 +557,6 @@ def test_start_match():
 
     response = cl.put("/matches/1/start/", headers=tok_header)
 
-    sleep(2)
     assert response.status_code == 201
 
     with db_session:
@@ -822,7 +574,7 @@ def test_start_nonexistant_user():
     )
 
     response = cl.put("/matches/1/start/", headers={"token": fake_token})
-    assert response.status_code == 404
+    assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
 
 def test_start_nonexistant_match():
@@ -831,10 +583,10 @@ def test_start_nonexistant_match():
     tok_header = {"token": user["token"]}
 
     response = cl.put("/matches/1/start/", headers=tok_header)
-    assert response.status_code == 404
+    assert response.status_code == MATCH_NOT_FOUND_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match not found"
+    assert data["detail"] == MATCH_NOT_FOUND_ERROR.detail
 
 
 def test_start_match_already_started():
@@ -849,10 +601,10 @@ def test_start_match_already_started():
     tok_header = {"token": users[1]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_STARTED_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match has already started"
+    assert data["detail"] == MATCH_STARTED_ERROR.detail
 
 
 def test_start_match_unowned_robot():
@@ -863,10 +615,10 @@ def test_start_match_unowned_robot():
     tok_header = {"token": users[1]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_CAN_ONLY_BE_STARTED_BY_HOST_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Host must start the match"
+    assert data["detail"] == MATCH_CAN_ONLY_BE_STARTED_BY_HOST_ERROR.detail
 
 
 def test_start_match_maximum():
@@ -886,10 +638,10 @@ def test_start_match_maximum():
     tok_header = {"token": users[0]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_FULL_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "Match is full"
+    assert data["detail"] == MATCH_FULL_ERROR.detail
 
 
 def test_start_match_minimum():
@@ -899,7 +651,7 @@ def test_start_match_minimum():
     tok_header = {"token": users[0]["token"]}
 
     response = cl.put(f"/matches/{match['id']}/start/", headers=tok_header)
-    assert response.status_code == 403
+    assert response.status_code == MATCH_MINIMUM_PLAYERS_NOT_REACHED_ERROR.status_code
 
     data = response.json()
-    assert data["detail"] == "The minimum number of players was not reached"
+    assert data["detail"] == MATCH_MINIMUM_PLAYERS_NOT_REACHED_ERROR.detail
