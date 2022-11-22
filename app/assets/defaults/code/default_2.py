@@ -1,3 +1,4 @@
+from app.game.entities import Robot
 import random
 
 class LoopBot(Robot):
