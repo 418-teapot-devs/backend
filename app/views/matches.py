@@ -2,7 +2,7 @@ import asyncio
 from enum import Enum
 from typing import Dict
 
-from fastapi import APIRouter, Header, HTTPException, WebSocket, status
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, WebSocket, status
 from pony.orm import commit, db_session, select
 from websockets.exceptions import WebSocketException
 
@@ -157,41 +157,7 @@ def join_match(match_id: int, form: MatchJoinRequest, token: str = Header()):
         asyncio.run(chan.push(match.dict()))
 
 
-@router.put("/{match_id}/start/", status_code=201)
-def start_match(match_id: int, token: str = Header()):
-    username = get_current_user(token)
-
-    with db_session:
-        if User.get(name=username) is None:
-            raise USER_NOT_FOUND_ERROR
-
-        m = Match.get(id=match_id)
-
-        if m is None:
-            raise MATCH_NOT_FOUND_ERROR
-
-        if m.state != "Lobby":
-            raise MATCH_STARTED_ERROR
-
-        if m.host != User.get(name=username):
-            raise MATCH_CAN_ONLY_BE_STARTED_BY_HOST_ERROR
-
-        if len(m.plays) < m.min_players:
-            raise MATCH_MINIMUM_PLAYERS_NOT_REACHED_ERROR
-
-        if len(m.plays) > m.max_players:
-            raise MATCH_FULL_ERROR
-
-        m.state = "InGame"
-        commit()
-
-    # Notify websockets
-    chan = channels.get(match_id)
-
-    if chan:
-        match = match_id_to_schema(match_id)
-        asyncio.run(chan.push(match.dict()))
-
+def execute_match(match_id: int):
     with db_session:
         m = Match.get(id=match_id)
         robot_ids = [r.id for r in m.plays]
@@ -229,6 +195,44 @@ def start_match(match_id: int, token: str = Header()):
             robot.mmr = max(robot.mmr - 10, 0)
 
         commit()
+
+    # Notify websockets
+    chan = channels.get(match_id)
+
+    if chan:
+        match = match_id_to_schema(match_id)
+        asyncio.run(chan.push(match.dict()))
+
+
+@router.put("/{match_id}/start/", status_code=201)
+def start_match(bg_tasks: BackgroundTasks, match_id: int, token: str = Header()):
+    username = get_current_user(token)
+
+    with db_session:
+        if User.get(name=username) is None:
+            raise USER_NOT_FOUND_ERROR
+
+        m = Match.get(id=match_id)
+
+        if m is None:
+            raise MATCH_NOT_FOUND_ERROR
+
+        if m.state != "Lobby":
+            raise MATCH_STARTED_ERROR
+
+        if m.host != User.get(name=username):
+            raise MATCH_CAN_ONLY_BE_STARTED_BY_HOST_ERROR
+
+        if len(m.plays) < m.min_players:
+            raise MATCH_MINIMUM_PLAYERS_NOT_REACHED_ERROR
+
+        if len(m.plays) > m.max_players:
+            raise MATCH_FULL_ERROR
+
+        m.state = "InGame"
+        commit()
+
+    bg_tasks.add_task(execute_match, match_id)
 
     # Notify websockets
     chan = channels.get(match_id)

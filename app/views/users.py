@@ -1,7 +1,7 @@
 from datetime import timedelta
 from shutil import copyfile
 
-from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, UploadFile
 from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
 from pony.orm import commit, db_session
@@ -32,7 +32,7 @@ router = APIRouter()
 
 
 @router.post("/", status_code=201)
-def register(schema: Register = Depends(), avatar: UploadFile | None = None):
+def register(bg_tasks: BackgroundTasks, schema: Register = Depends(), avatar: UploadFile | None = None):
     if avatar and avatar.content_type != "image/png":
         raise HTTPException(status_code=422, detail="invalid picture format")
 
@@ -65,7 +65,7 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
             timedelta(days=VERIFY_TOKEN_EXPIRE_DAYS),
         )
 
-        send_verification_token(user.email, verify_token)
+        bg_tasks.add_task(send_verification_token, user.email, verify_token)
 
         login_token = create_access_token(
             {"sub": "login", "username": user.name},
