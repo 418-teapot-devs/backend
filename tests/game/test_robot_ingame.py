@@ -98,48 +98,48 @@ def test_bot_wall():
 
 def test_scan_no_robots():
     r = NoMove(1, 0, (500, 500))
-    r.point_scanner(175,5)
+    r.point_scanner(175, 5)
     r._scan([])
     assert r.scanned() == math.inf
 
 
 def test_scan_one_found():
-    r = NoMove(1, 0, (400,300))
-    r.point_scanner(63,3)
-    r._scan([(600,725)])
-    assert r.scanned() == math.dist((400,300), (600,725))
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(63, 3)
+    r._scan([(600, 725)])
+    assert r.scanned() == math.dist((400, 300), (600, 725))
 
-    r.point_scanner(302,10)
-    r._scan([(409,290)])
-    assert r.scanned() == math.dist((400,300), (409, 290))
+    r.point_scanner(302, 10)
+    r._scan([(409, 290)])
+    assert r.scanned() == math.dist((400, 300), (409, 290))
 
 
 def test_scan_none_found():
-    r = NoMove(1, 0, (400,300))
-    r.point_scanner(302,10)
-    r._scan([(100,100)])
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(302, 10)
+    r._scan([(100, 100)])
     assert r.scanned() == math.inf
 
 
 def test_scan_many():
-    r = NoMove(1, 0, (400,300))
-    r.point_scanner(302,10)
-    r._scan([(409,290),(406,286),(415,285)])
-    assert r.scanned() == math.dist((400,300), (409, 290))
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(302, 10)
+    r._scan([(409, 290), (406, 286), (415, 285)])
+    assert r.scanned() == math.dist((400, 300), (409, 290))
 
 
 def test_scan_res_underflow():
-    r = NoMove(1, 0, (400,300))
-    r.point_scanner(1,10)
-    r._scan([(410,299)])
-    assert r.scanned() == math.dist((400,300), (410, 299))
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(1, 10)
+    r._scan([(410, 299)])
+    assert r.scanned() == math.dist((400, 300), (410, 299))
 
 
 def test_scan_res_overflow():
-    r = NoMove(1, 0, (400,300))
-    r.point_scanner(356,10)
-    r._scan([(410,301)])
-    assert r.scanned() == math.dist((400,300), (410, 301))
+    r = NoMove(1, 0, (400, 300))
+    r.point_scanner(356, 10)
+    r._scan([(410, 301)])
+    assert r.scanned() == math.dist((400, 300), (410, 301))
 
 
 def test_bot_cannon():
