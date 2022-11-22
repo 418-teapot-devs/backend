@@ -48,13 +48,6 @@ def test_users_register_restrictions():
     response = cl.post(f"/users/{params}")
     assert response.status_code == 201
 
-    data = response.json()
-    assert "token" in data.keys()
-
-    username, subject = get_user_and_subject(data["token"])
-    assert subject == "login"
-    assert username == "test"
-
     test_jsons = [
         (
             {
@@ -233,20 +226,17 @@ def test_users_avatar():
     )
     assert response.status_code == 201
 
-    data = response.json()
-    assert "token" in data.keys()
-
-    username, subject = get_user_and_subject(data["token"])
-    assert subject == "login"
-    assert username == json["username"]
-
 
 def test_default_robots():
-    params = json_to_queryparams(
-        {"username": "leo", "password": "Burrito21", "email": "l@test.com"}
-    )
-    response = cl.post(f"/users/{params}")
+    userdata = {
+        "username": "leo", "password": "Burrito21", "email": "l@test.com"
+    }
+    response = cl.post(f"/users/{json_to_queryparams(userdata)}")
     assert response.status_code == 201
+
+    userdata.pop('email')
+    response = cl.post("/users/login/", json=userdata)
+    assert response.status_code == 200
 
     data = response.json()
     token_header = {"token": data["token"]}
@@ -411,15 +401,17 @@ def test_invalid_put_password():
     )
     assert response.status_code == USER_NOT_FOUND_ERROR.status_code
 
-    params = json_to_queryparams(
-        {
-            "username": "maciel",
-            "password": "Burrito21",
-            "email": "midulcelechona@test.com",
-        }
-    )
-    response = cl.post(f"/users/{params}")
+    params = {
+        "username": "maciel",
+        "password": "Burrito21",
+        "email": "midulcelechona@test.com",
+    }
+    response = cl.post(f"/users/{json_to_queryparams(params)}")
     assert response.status_code == 201
+
+    params.pop('email')
+    response = cl.post("/users/login/", json=params)
+    assert response.status_code == 200
 
     data = response.json()
     tok_header = {"token": data["token"]}
@@ -449,15 +441,17 @@ def test_invalid_put_password():
 
 
 def test_put_password():
-    params = json_to_queryparams(
-        {
-            "username": "maciel",
-            "password": "Burrito21",
-            "email": "midulcelechona@test.com",
-        }
-    )
-    response = cl.post(f"/users/{params}")
+    params = {
+        "username": "maciel",
+        "password": "Burrito21",
+        "email": "midulcelechona@test.com",
+    }
+    response = cl.post(f"/users/{json_to_queryparams(params)}")
     assert response.status_code == 201
+
+    params.pop('email')
+    response = cl.post("/users/login/", json=params)
+    assert response.status_code == 200
 
     data = response.json()
     tok_header = {"token": data["token"]}

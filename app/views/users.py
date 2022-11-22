@@ -31,7 +31,7 @@ password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter()
 
 
-@router.post("/", response_model=Token, status_code=201)
+@router.post("/", status_code=201)
 def register(schema: Register = Depends(), avatar: UploadFile | None = None):
     if avatar and avatar.content_type != "image/png":
         raise HTTPException(status_code=422, detail="invalid picture format")
@@ -94,8 +94,6 @@ def register(schema: Register = Depends(), avatar: UploadFile | None = None):
             f"{ASSETS_DIR}/defaults/code/default_2.py",
             f"{ASSETS_DIR}/robots/code/{default_2.id}.py",
         )
-
-        return Token(token=login_token)
 
 
 @router.post("/login/", response_model=LoginResponse)

@@ -42,6 +42,10 @@ def register_random_users(count):
         response = cl.post(f"/users/{json_to_queryparams(json_form)}")
         assert response.status_code == 201
 
+        login_data = {"username": username, "password": password}
+        response = cl.post("/users/login/", json=login_data)
+        assert response.status_code == 200
+
         data = response.json()
 
         users[i]["username"] = username

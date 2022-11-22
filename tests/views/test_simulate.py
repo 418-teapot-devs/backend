@@ -31,6 +31,10 @@ def test_invalid_simulation():
         response = cl.post(f"/users/{json_to_queryparams(u)}")
         assert response.status_code == 201
 
+        login_data = {"username": u["username"], "password": u["password"]}
+        response = cl.post("/users/login/", json=login_data)
+        assert response.status_code == 200
+
         data = response.json()
         tokens.append(data["token"])
 
@@ -92,6 +96,10 @@ def test_run_simulation():
 
     response = cl.post(f"/users/{json_to_queryparams(user)}")
     assert response.status_code == 201
+
+    login_data = {"username": user["username"], "password": user["password"]}
+    response = cl.post("/users/login/", json=login_data)
+    assert response.status_code == 200
 
     data = response.json()
     token = data["token"]

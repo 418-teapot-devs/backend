@@ -56,14 +56,9 @@ def test_get_with_qp_from_nonexistant_user():
 
 
 def test_get_nonexistent_match():
-    user = {"username": "gino", "password": "GatoTruco123", "email": "k@gmail.com"}
+    [user] = register_random_users(1)
 
-    response = cl.post(f"/users/{json_to_queryparams(user)}")
-    assert response.status_code == 201
-
-    token = response.json()["token"]
-
-    response = cl.get("/matches/1", headers={"token": token})
+    response = cl.get("/matches/1", headers={"token": user["token"]})
     assert response.status_code == MATCH_NOT_FOUND_ERROR.status_code
 
 
